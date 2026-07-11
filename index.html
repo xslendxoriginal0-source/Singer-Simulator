@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ENCORE — Simulador de Carrera Musical</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#100E17;
+  --ink2:#181521;
+  --ink3:#221E2E;
+  --line:#332D42;
+  --paper:#F4F1EA;
+  --gold:#E8B24D;
+  --gold-dim:#8a6c34;
+  --pink:#FF3D7F;
+  --teal:#39C0C8;
+  --green:#5FBF6E;
+  --red:#E5484D;
+  --text:#EDEAE2;
+  --text-dim:#9E97AC;
+  --radius:10px;
+}
+body.light{
+  --ink:#F4F1EA; --ink2:#FFFFFF; --ink3:#ECE7DC; --line:#D8D0BE; --paper:#241E14;
+  --text:#241E14; --text-dim:#6B6252;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  background:var(--ink);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.display{ font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.02em; }
+.mono{ font-family:'JetBrains Mono',monospace; }
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
+button{ font-family:'Inter',sans-serif; cursor:pointer; border:none; }
+input,select,textarea{ font-family:'Inter',sans-serif; }
+a{color:var(--gold);}
+
+/* ===== Landing / Character creation ===== */
+#setupScreen{
+  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255,61,127,0.10), transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(232,178,77,0.10), transparent 40%),
+    var(--ink);
+}
+.setupCard{
+  width:100%; max-width:760px; background:var(--ink2); border:1px solid var(--line);
+  border-radius:16px; padding:38px 40px; box-shadow:0 30px 80px rgba(0,0,0,0.5);
+}
+.brand{ display:flex; align-items:baseline; gap:10px; margin-bottom:4px;}
+.brand .rec{ width:14px;height:14px;border-radius:50%; background:var(--pink); box-shadow:0 0 12px var(--pink); animation:pulse 1.8s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.brand h1{ font-size:34px; letter-spacing:0.06em; color:var(--paper);}
+.tagline{ color:var(--text-dim); font-size:13px; margin-bottom:26px; letter-spacing:0.03em;}
+.stepDots{ display:flex; gap:6px; margin-bottom:22px;}
+.stepDots span{ height:4px; flex:1; background:var(--line); border-radius:2px; overflow:hidden;}
+.stepDots span i{ display:block; height:100%; width:0%; background:var(--gold); transition:width .3s;}
+.stepDots span.done i{width:100%;}
+.stepDots span.active i{width:60%;}
+.formGrid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.field{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px;}
+.field label{ font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-dim); font-weight:600;}
+.field input, .field select, .field textarea{
+  background:var(--ink3); border:1px solid var(--line); color:var(--text);
+  padding:10px 12px; border-radius:8px; font-size:14px; outline:none;
+}
+.field input:focus, .field select:focus, .field textarea:focus{ border-color:var(--gold); }
+.field textarea{ resize:vertical; min-height:64px;}
+.chipRow{ display:flex; flex-wrap:wrap; gap:8px; }
+.chip{
+  padding:7px 13px; border-radius:20px; background:var(--ink3); border:1px solid var(--line);
+  font-size:12.5px; color:var(--text-dim); transition:all .15s;
+}
+.chip.sel{ background:var(--gold); color:#241b04; border-color:var(--gold); font-weight:600;}
+.chip:hover{ border-color:var(--gold-dim); }
+.range{ display:flex; align-items:center; gap:10px;}
+.range input[type=range]{ flex:1; accent-color:var(--gold);}
+.range .val{ width:34px; text-align:right; font-family:'JetBrains Mono',monospace; color:var(--gold); font-size:13px;}
+.btnRow{ display:flex; justify-content:space-between; margin-top:22px; gap:10px;}
+.btn{
+  padding:12px 22px; border-radius:8px; font-weight:600; font-size:13.5px; letter-spacing:0.02em;
+  text-transform:uppercase; transition:transform .1s, opacity .15s;
+}
+.btn:active{ transform:scale(0.97); }
+.btn-primary{ background:var(--gold); color:#241b04; }
+.btn-primary:hover{ opacity:.9; }
+.btn-ghost{ background:transparent; color:var(--text-dim); border:1px solid var(--line); }
+.btn-ghost:hover{ color:var(--text); border-color:var(--text-dim);}
+.btn-pink{ background:var(--pink); color:#2a0313;}
+.btn-teal{ background:var(--teal); color:#052225;}
+.btn-danger{ background:var(--red); color:#2a0505;}
+.btn-sm{ padding:7px 12px; font-size:11.5px; border-radius:6px;}
+.hint{ font-size:11.5px; color:var(--text-dim); margin-top:4px;}
+.avatarRow{ display:flex; gap:10px; flex-wrap:wrap;}
+.avatarPick{ width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:22px; background:var(--ink3); border:2px solid var(--line); }
+.avatarPick.sel{ border-color:var(--gold); box-shadow:0 0 0 3px rgba(232,178,77,0.2);}
+
+/* ===== Game shell ===== */
+#game{ display:none; min-height:100vh; }
+.topbar{
+  position:sticky; top:0; z-index:50; background:rgba(16,14,23,0.92); backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line); padding:10px 22px; display:flex; align-items:center; gap:18px;
+}
+.topbar .who{ display:flex; align-items:center; gap:10px; min-width:180px;}
+.topbar .avatarSm{ width:36px;height:36px;border-radius:50%; background:var(--ink3); display:flex; align-items:center; justify-content:center; font-size:17px; border:1px solid var(--line);}
+.topbar .who .name{ font-family:'Oswald'; font-size:15px; letter-spacing:0.02em; color:var(--paper);}
+.topbar .who .era{ font-size:10.5px; color:var(--gold); text-transform:uppercase; letter-spacing:0.05em;}
+.stat{ display:flex; flex-direction:column; align-items:flex-start; min-width:64px;}
+.stat .l{ font-size:9.5px; text-transform:uppercase; color:var(--text-dim); letter-spacing:0.06em;}
+.stat .v{ font-family:'JetBrains Mono'; font-size:14px; font-weight:600; color:var(--text);}
+.stat.money .v{ color:var(--green);}
+.stat.fame .v{ color:var(--gold);}
+.stat.fans .v{ color:var(--pink);}
+.stat.energy .v{ color:var(--teal);}
+.dateBox{ margin-left:auto; text-align:right; font-family:'JetBrains Mono'; font-size:12px; color:var(--text-dim);}
+.dateBox b{ color:var(--paper); font-size:13px; display:block;}
+.nextWeekBtn{ background:var(--pink); color:#2a0313; padding:10px 18px; border-radius:8px; font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; white-space:nowrap;}
+.nextWeekBtn:hover{ opacity:.9;}
+
+.ticker{ background:var(--ink3); border-bottom:1px solid var(--line); overflow:hidden; white-space:nowrap; padding:7px 0;}
+.ticker span.trackline{ display:inline-block; padding-left:100%; animation:tick 28s linear infinite; font-family:'JetBrains Mono'; font-size:12px; color:var(--text-dim);}
+.ticker b{ color:var(--gold); }
+@keyframes tick{ 0%{transform:translateX(0);} 100%{transform:translateX(-100%);} }
+
+.tabs{ display:flex; gap:2px; padding:0 22px; background:var(--ink2); border-bottom:1px solid var(--line); overflow-x:auto;}
+.tabs button{ background:transparent; color:var(--text-dim); padding:13px 16px; font-size:12.5px; font-weight:600;
+  text-transform:uppercase; letter-spacing:0.03em; border-bottom:2px solid transparent; white-space:nowrap;}
+.tabs button.active{ color:var(--gold); border-bottom-color:var(--gold);}
+.tabs button:hover{ color:var(--text);}
+
+.wrap{ max-width:1180px; margin:0 auto; padding:26px 22px 80px; }
+.panel{ display:none; }
+.panel.active{ display:block; animation:fadeIn .25s; }
+@keyframes fadeIn{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+
+.grid2{ display:grid; grid-template-columns:1.3fr 1fr; gap:18px;}
+.grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+.grid4{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+@media(max-width:900px){ .grid2,.grid3,.grid4{grid-template-columns:1fr;} .formGrid{grid-template-columns:1fr;} }
+
+.card{ background:var(--ink2); border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px;}
+.card h3{ font-size:15px; color:var(--paper); margin-bottom:12px; letter-spacing:0.02em;}
+.card h3 small{ color:var(--text-dim); font-family:'Inter'; text-transform:none; letter-spacing:0; font-size:11px; font-weight:400;}
+.miniStat{ display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:13px;}
+.miniStat:last-child{ border-bottom:none;}
+.miniStat .lab{ color:var(--text-dim);}
+.miniStat .val{ font-family:'JetBrains Mono'; font-weight:600;}
+
+.newsFeed{ display:flex; flex-direction:column; gap:10px; max-height:420px; overflow-y:auto;}
+.newsItem{ background:var(--ink3); border-left:3px solid var(--gold); border-radius:6px; padding:10px 12px; font-size:13px;}
+.newsItem .tag{ font-size:9.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--gold); font-weight:700; display:block; margin-bottom:3px;}
+.newsItem.pink{ border-color:var(--pink);}
+.newsItem.pink .tag{ color:var(--pink);}
+.newsItem.teal{ border-color:var(--teal);}
+.newsItem.teal .tag{ color:var(--teal);}
+.newsItem.red{ border-color:var(--red);}
+.newsItem.red .tag{ color:var(--red);}
+.newsItem .wk{ float:right; color:var(--text-dim); font-size:10.5px;}
+
+.barRow{ display:flex; align-items:center; gap:10px; margin-bottom:9px; font-size:12.5px;}
+.barRow .lab{ width:110px; color:var(--text-dim); flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.barTrack{ flex:1; background:var(--ink3); border-radius:5px; height:9px; overflow:hidden;}
+.barFill{ height:100%; border-radius:5px; background:linear-gradient(90deg,var(--gold-dim),var(--gold)); }
+.barVal{ width:46px; text-align:right; font-family:'JetBrains Mono'; color:var(--text);}
+
+.chartTable{ width:100%; border-collapse:collapse; font-size:13px;}
+.chartTable th{ text-align:left; padding:8px 8px; color:var(--text-dim); font-size:10.5px; text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid var(--line);}
+.chartTable td{ padding:9px 8px; border-bottom:1px solid var(--ink3); vertical-align:middle;}
+.chartTable tr.mine{ background:rgba(232,178,77,0.08);}
+.pos{ font-family:'JetBrains Mono'; font-weight:700; font-size:15px; width:34px; display:inline-block;}
+.move-up{ color:var(--green);} .move-down{ color:var(--red);} .move-same{ color:var(--text-dim);}
+.pillNew{ background:var(--pink); color:#2a0313; font-size:9px; padding:2px 6px; border-radius:4px; font-weight:700; margin-left:6px;}
+
+.songRow{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line);}
+.songRow:last-child{border-bottom:none;}
+.songRow .meta{ font-size:11px; color:var(--text-dim);}
+.songRow .title{ font-weight:600; font-size:13.5px;}
+.badge{ display:inline-block; padding:2px 8px; border-radius:5px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;}
+.badge.single{ background:var(--teal); color:#052225;}
+.badge.album{ background:var(--gold); color:#241b04;}
+.badge.ep{ background:var(--pink); color:#2a0313;}
+.badge.unreleased{ background:var(--ink3); color:var(--text-dim); border:1px solid var(--line);}
+
+.modalBg{ position:fixed; inset:0; background:rgba(8,7,12,0.7); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; z-index:200; padding:20px;}
+.modalBg.open{ display:flex;}
+.modal{ background:var(--ink2); border:1px solid var(--line); border-radius:14px; padding:28px 30px; max-width:640px; width:100%; max-height:86vh; overflow-y:auto;}
+.modal h2{ font-size:20px; color:var(--paper); margin-bottom:16px;}
+.closeX{ float:right; background:transparent; color:var(--text-dim); font-size:20px;}
+
+.achieveGrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px;}
+.ach{ background:var(--ink3); border:1px solid var(--line); border-radius:8px; padding:12px; font-size:12.5px; opacity:0.4;}
+.ach.unlocked{ opacity:1; border-color:var(--gold);}
+.ach .name{ font-weight:700; color:var(--paper); display:block; margin-bottom:3px;}
+.ach .desc{ color:var(--text-dim); font-size:11px;}
+
+.eraTimeline{ display:flex; flex-direction:column; gap:0; border-left:2px solid var(--line); margin-left:8px;}
+.eraNode{ position:relative; padding:0 0 26px 24px;}
+.eraNode::before{ content:''; position:absolute; left:-7px; top:2px; width:12px; height:12px; border-radius:50%; background:var(--gold); border:2px solid var(--ink);}
+.eraNode h4{ font-family:'Oswald'; font-size:16px; color:var(--paper);}
+.eraNode .sub{ font-size:11.5px; color:var(--text-dim); margin-bottom:6px;}
+
+.empty{ color:var(--text-dim); font-size:13px; text-align:center; padding:30px 10px;}
+.select-inline{ display:inline-block;}
+.flexBetween{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
+.smallNote{ font-size:11px; color:var(--text-dim); margin-top:8px; line-height:1.5;}
+.twoCol{ display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.tag-genre{ display:inline-block; background:var(--ink3); border:1px solid var(--line); padding:3px 9px; border-radius:12px; font-size:10.5px; color:var(--text-dim); margin-right:4px;}
+</style>
+</head>
+<body>
+
+<!-- ============ SETUP / CHARACTER CREATION ============ -->
+<div id="setupScreen">
+  <div class="setupCard">
+    <div class="brand"><div class="rec"></div><h1>Encore</h1></div>
+    <div class="tagline">Simulador de carrera musical — de la habitación al estrellato (o al olvido)</div>
+    <div class="stepDots" id="stepDots"></div>
+
+    <!-- STEP 1: identidad -->
+    <div class="setupStep" id="step1">
+      <div class="formGrid">
+        <div class="field"><label>Nombre artístico</label><input id="f_stage" placeholder="ej. Nova Ray"></div>
+        <div class="field"><label>Nombre real</label><input id="f_real" placeholder="ej. Camila Torres"></div>
+        <div class="field"><label>Edad</label><input id="f_age" type="number" min="14" max="60" value="19"></div>
+        <div class="field"><label>Género</label>
+          <select id="f_gender"><option>Mujer</option><option>Hombre</option><option>No binario</option><option>Prefiero no decir</option></select>
+        </div>
+        <div class="field"><label>Pronombres</label>
+          <select id="f_pronouns"><option>ella</option><option>él</option><option>elle</option></select>
+        </div>
+        <div class="field"><label>País de origen</label><input id="f_country" placeholder="ej. Ecuador"></div>
+        <div class="field"><label>Ciudad</label><input id="f_city" placeholder="ej. Quito"></div>
+        <div class="field"><label>Nivel económico inicial</label>
+          <select id="f_econ"><option value="bajo">Bajo (poco presupuesto)</option><option value="medio" selected>Medio</option><option value="alto">Alto (familia con recursos)</option></select>
+        </div>
+      </div>
+      <div class="field"><label>Biografía corta</label><textarea id="f_bio" placeholder="Contá de dónde viene tu artista, qué lo/la impulsa..."></textarea></div>
+      <div class="field"><label>Avatar</label>
+        <div class="avatarRow" id="avatarRow"></div>
+      </div>
+    </div>
+
+    <!-- STEP 2: personalidad + géneros -->
+    <div class="setupStep" id="step2" style="display:none;">
+      <div class="field"><label>Personalidad (elegí 1-2)</label>
+        <div class="chipRow" id="personalityChips"></div>
+      </div>
+      <div class="field"><label>Géneros musicales (elegí hasta 3 — se pueden fusionar)</label>
+        <div class="chipRow" id="genreChips" style="max-height:180px; overflow-y:auto;"></div>
+      </div>
+      <div class="field"><label>Fama inicial</label>
+        <div class="range"><input type="range" id="f_fame" min="0" max="15" value="0"><span class="val" id="f_fameVal">0</span></div>
+        <div class="hint">La mayoría empieza en 0. Un poco de fama inicial representa haber sido viral antes de empezar.</div>
+      </div>
+      <div class="field"><label>Dificultad</label>
+        <div class="chipRow" id="diffChips">
+          <div class="chip sel" data-v="facil">Fácil</div>
+          <div class="chip" data-v="normal">Normal</div>
+          <div class="chip" data-v="dificil">Difícil</div>
+          <div class="chip" data-v="realista">Realista</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btnRow">
+      <button class="btn btn-ghost" id="btnBack" style="visibility:hidden;">Atrás</button>
+      <button class="btn btn-primary" id="btnNext">Siguiente →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ GAME ============ -->
+<div id="game">
+  <div class="topbar">
+    <div class="who">
+      <div class="avatarSm" id="topAvatar">🎤</div>
+      <div>
+        <div class="name" id="topName">—</div>
+        <div class="era" id="topEra">Sin era activa</div>
+      </div>
+    </div>
+    <div class="stat money"><span class="l">Dinero</span><span class="v" id="statMoney">$0</span></div>
+    <div class="stat fame"><span class="l">Fama</span><span class="v" id="statFame">0</span></div>
+    <div class="stat fans"><span class="l">Fans</span><span class="v" id="statFans">0</span></div>
+    <div class="stat energy"><span class="l">Energía</span><span class="v" id="statEnergy">100</span></div>
+    <div class="dateBox"><b id="dateNow">Semana 1</b><span id="ageNow">19 años</span></div>
+    <button class="nextWeekBtn" id="btnNextWeek">Avanzar semana ▶</button>
+  </div>
+
+  <div class="ticker"><span class="trackline" id="tickerLine">Cargando charts...</span></div>
+
+  <div class="tabs" id="tabsBar">
+    <button data-tab="dashboard" class="active">Panel</button>
+    <button data-tab="estudio">Estudio</button>
+    <button data-tab="lanzamientos">Lanzamientos</button>
+    <button data-tab="social">Redes</button>
+    <button data-tab="charts">Charts</button>
+    <button data-tab="finanzas">Finanzas</button>
+    <button data-tab="giras">Giras</button>
+    <button data-tab="premios">Premios</button>
+    <button data-tab="logros">Logros</button>
+    <button data-tab="legado">Legado</button>
+  </div>
+
+  <div class="wrap">
+
+    <!-- DASHBOARD -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="grid2">
+        <div class="card">
+          <h3>Noticias <small>lo último de tu carrera</small></h3>
+          <div class="newsFeed" id="newsFeed"></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:18px;">
+          <div class="card">
+            <h3>Estado</h3>
+            <div class="miniStat"><span class="lab">Salud / Energía</span><span class="val" id="dashEnergy">—</span></div>
+            <div class="miniStat"><span class="lab">Estrés</span><span class="val" id="dashStress">—</span></div>
+            <div class="miniStat"><span class="lab">Inspiración</span><span class="val" id="dashInspo">—</span></div>
+            <div class="miniStat"><span class="lab">Discográfica</span><span class="val" id="dashLabel">Independiente</span></div>
+            <div class="miniStat"><span class="lab">Álbumes / EPs / Singles</span><span class="val" id="dashCounts">0 / 0 / 0</span></div>
+          </div>
+          <div class="card">
+            <h3>Redes sociales</h3>
+            <div id="dashSocials"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ESTUDIO -->
+    <div class="panel" id="panel-estudio">
+      <div class="grid2">
+        <div class="card">
+          <h3>Crear canción</h3>
+          <div class="formGrid">
+            <div class="field"><label>Título</label><input id="s_title" placeholder="Nombre de la canción"></div>
+            <div class="field"><label>Género</label><select id="s_genre"></select></div>
+            <div class="field"><label>Duración (min)</label><input id="s_dur" type="number" min="1" max="9" value="3" step="0.1"></div>
+            <div class="field"><label>BPM</label><input id="s_bpm" type="number" min="60" max="180" value="110"></div>
+            <div class="field"><label>Tonalidad</label>
+              <select id="s_key"><option>Do M</option><option>Re m</option><option>Mi M</option><option>Fa# m</option><option>Sol M</option><option>La m</option><option>Si♭ M</option></select>
+            </div>
+            <div class="field"><label>Idioma</label>
+              <select id="s_lang"><option>Español</option><option>Inglés</option><option>Bilingüe</option><option>Portugués</option><option>Coreano</option><option>Instrumental</option></select>
+            </div>
+            <div class="field"><label>Explícito</label>
+              <select id="s_exp"><option value="false">Clean</option><option value="true">Explicit</option></select>
+            </div>
+            <div class="field"><label>Colaboración (opcional)</label><select id="s_collab"><option value="">Ninguna</option></select></div>
+            <div class="field"><label>Encargo de cine/TV (opcional)</label><select id="s_forInvitation"><option value="">Ninguno (canción propia)</option></select></div>
+          </div>
+          <div class="field"><label>Productores <span class="hint">(podés elegir más de uno — los que uses quedan guardados como tus productores de confianza)</span></label>
+            <div id="producerBox" style="max-height:190px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:8px;"></div>
+          </div>
+          <div class="field"><label>Originalidad vs. Comercialidad</label>
+            <div class="range"><input type="range" id="s_orig" min="0" max="100" value="50"><span class="val" id="s_origVal">50</span></div>
+            <div class="hint">Más originalidad = más valor artístico y crítica; más comercialidad = más potencial viral.</div>
+          </div>
+          <div class="field"><label>Presupuesto de producción (afecta calidad y costo)</label>
+            <div class="range"><input type="range" id="s_budget" min="0" max="100" value="30"><span class="val" id="s_budgetVal">30</span></div>
+            <div class="hint" id="s_budgetCost">Costo estimado: $0</div>
+          </div>
+          <button class="btn btn-primary" id="btnCreateSong" style="width:100%; margin-top:8px;">Componer y producir</button>
+        </div>
+
+        <div class="card">
+          <h3>Catálogo <small id="catCount">0 canciones</small></h3>
+          <div id="songList" style="max-height:560px; overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LANZAMIENTOS -->
+    <div class="panel" id="panel-lanzamientos">
+      <div class="grid2">
+        <div class="card">
+          <h3>Programar lanzamiento</h3>
+          <div class="field"><label>Tipo de lanzamiento</label>
+            <select id="r_type">
+              <option value="single">Single</option>
+              <option value="ep">EP (3-6 canciones)</option>
+              <option value="album">Álbum (nueva era)</option>
+              <option value="mixtape">Mixtape</option>
+            </select>
+          </div>
+          <div class="field" id="r_nameField"><label>Título del lanzamiento / álbum</label><input id="r_name" placeholder="Nombre del proyecto"></div>
+          <div class="field" id="r_eraColorField"><label>Color de la era</label><input id="r_eraColor" type="color" value="#E8B24D"></div>
+          <div class="field" id="r_themeField"><label>Temática / concepto del álbum</label><input id="r_theme" placeholder="ej. Ruptura y renacimiento en una ciudad de neón"></div>
+          <div class="field" id="r_eraCheckField"><label>¿Esto arranca una nueva era?</label>
+            <div class="chipRow"><div class="chip sel" id="r_eraYes" data-v="1">Sí, es una nueva era</div><div class="chip" id="r_eraNo" data-v="0">No, es aparte</div></div>
+          </div>
+          <div class="field"><label>Canciones disponibles <span class="hint">(clic en + para agregar al tracklist)</span></label>
+            <div id="unreleasedList" style="max-height:180px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:8px;"></div>
+          </div>
+          <div class="field"><label>Tracklist ordenado</label>
+            <div id="tracklistBox" style="border:1px solid var(--line); border-radius:8px; padding:8px; min-height:40px;"></div>
+          </div>
+          <div class="field"><label>Estrategia de lanzamiento</label>
+            <select id="r_strategy">
+              <option value="sorpresa">Lanzamiento sorpresa</option>
+              <option value="planeado">Campaña planeada (varios singles antes)</option>
+              <option value="local">Solo local</option>
+              <option value="mundial">Mundial simultáneo</option>
+            </select>
+          </div>
+          <div class="field"><label>¿Cuándo sale?</label>
+            <select id="r_when">
+              <option value="0">Ahora mismo</option>
+              <option value="2">Anunciar y lanzar en 2 semanas</option>
+              <option value="4">Anunciar y lanzar en 4 semanas</option>
+              <option value="8">Anunciar y lanzar en 8 semanas</option>
+              <option value="12">Anunciar y lanzar en 12 semanas</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="btnRelease" style="width:100%; margin-top:8px;">Confirmar lanzamiento</button>
+          <div class="smallNote">Todas las canciones de un álbum entran también al Hot 100, no solo los singles. Después podés convertir cualquier canción del álbum en nuevo single, hacer regrabaciones (Artist's Version) o ediciones Deluxe desde Legado.</div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:18px;">
+          <div class="card">
+            <h3>Anunciados / en camino</h3>
+            <div id="scheduledBox" class="empty">No tenés lanzamientos anunciados todavía.</div>
+          </div>
+          <div class="card">
+            <h3>Promoción activa</h3>
+            <div id="promoList"></div>
+            <hr style="border-color:var(--line); margin:14px 0;">
+            <h3 style="margin-bottom:8px;">Lanzar campaña</h3>
+            <div class="field"><label>Proyecto a promocionar</label><select id="p_project"></select></div>
+            <div class="field"><label>Tipo de campaña</label><select id="p_type"></select></div>
+            <button class="btn btn-pink" id="btnCampaign" style="width:100%;">Ejecutar campaña</button>
+            <div class="smallNote" id="p_costNote"></div>
+          </div>
+          <div class="card">
+            <h3>Invitaciones a películas / series <small>bandas sonoras</small></h3>
+            <div id="invitationsBox" class="empty">Por ahora no tenés invitaciones pendientes. Aparecen a medida que crece tu fama.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- REDES SOCIALES -->
+    <div class="panel" id="panel-social">
+      <div class="grid2">
+        <div class="card">
+          <h3>Tus plataformas</h3>
+          <div id="socialBars"></div>
+        </div>
+        <div class="card">
+          <h3>Publicar</h3>
+          <div class="field"><label>Plataforma</label><select id="soc_platform"></select></div>
+          <div class="field"><label>Tipo de post</label>
+            <select id="soc_type">
+              <option value="post">Post normal</option>
+              <option value="story">Historia</option>
+              <option value="live">Live</option>
+              <option value="polemica">Comentario polémico</option>
+              <option value="challenge">Challenge / reto viral</option>
+            </select>
+          </div>
+          <button class="btn btn-teal" id="btnPost" style="width:100%;">Publicar</button>
+          <div class="smallNote">Publicar cuesta energía. Las polémicas pueden dar fama rápida... o restar fans leales.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="panel" id="panel-charts">
+      <div class="grid2">
+        <div class="card">
+          <h3>Billboard Hot 100 <small>singles, esta semana</small></h3>
+          <table class="chartTable"><thead><tr><th>#</th><th>Canción</th><th>Artista</th><th>Semanas</th><th>Pico</th></tr></thead><tbody id="hot100Body"></tbody></table>
+        </div>
+        <div class="card">
+          <h3>Billboard 200 <small>álbumes, esta semana</small></h3>
+          <table class="chartTable"><thead><tr><th>#</th><th>Álbum</th><th>Artista</th><th>Semanas</th><th>Pico</th></tr></thead><tbody id="b200Body"></tbody></table>
+        </div>
+      </div>
+      <div class="card" style="margin-top:18px;">
+        <h3>Tu historial en charts</h3>
+        <div id="chartHistory" class="empty">Todavía no entraste a ningún chart.</div>
+      </div>
+    </div>
+
+    <!-- FINANZAS -->
+    <div class="panel" id="panel-finanzas">
+      <div class="grid2">
+        <div class="card">
+          <h3>Resumen financiero</h3>
+          <div class="miniStat"><span class="lab">Balance actual</span><span class="val" id="fin_balance">$0</span></div>
+          <div class="miniStat"><span class="lab">Ingresos esta semana</span><span class="val" id="fin_income">$0</span></div>
+          <div class="miniStat"><span class="lab">Gastos esta semana</span><span class="val" id="fin_expense">$0</span></div>
+          <div class="miniStat"><span class="lab">Regalías acumuladas</span><span class="val" id="fin_royalties">$0</span></div>
+          <div class="miniStat"><span class="lab">Patrocinios</span><span class="val" id="fin_sponsor">$0</span></div>
+        </div>
+        <div class="card">
+          <h3>Discográfica</h3>
+          <div id="labelBox"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:18px;">
+        <h3>Compras personales</h3>
+        <div class="grid4" id="shopGrid"></div>
+      </div>
+    </div>
+
+    <!-- GIRAS -->
+    <div class="panel" id="panel-giras">
+      <div class="grid2">
+        <div class="card">
+          <h3>Organizar gira</h3>
+          <div class="field"><label>Nombre de la gira</label><input id="t_name" placeholder="ej. Neon Hearts Tour"></div>
+          <div class="field"><label>Tipo de gira</label>
+            <select id="t_type">
+              <option value="showcase">Showcase</option>
+              <option value="club">Club Tour</option>
+              <option value="theatre">Theatre Tour</option>
+              <option value="arena">Arena Tour</option>
+              <option value="stadium">Stadium Tour</option>
+              <option value="festival">Festival Tour</option>
+              <option value="world">World Tour</option>
+              <option value="acoustic">Acoustic Tour</option>
+            </select>
+          </div>
+          <div class="field"><label>Número de fechas (= semanas de duración)</label><input id="t_dates" type="number" min="1" max="40" value="5"></div>
+          <button class="btn btn-primary" id="btnTour" style="width:100%;">Anunciar y salir de gira</button>
+          <div class="smallNote">La gira dura tantas semanas como fechas elijas: cada semana que avances mientras esté activa se resolverán algunas fechas, hasta terminarla.</div>
+        </div>
+        <div class="card">
+          <h3>Gira en curso</h3>
+          <div id="activeTourBox" class="empty">No estás de gira ahora mismo.</div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <h3>Historial de giras</h3>
+          <div id="tourHistory" class="empty">Todavía no hiciste ninguna gira.</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:18px;">
+        <h3>Festivales</h3>
+        <div class="grid3" id="festivalGrid"></div>
+      </div>
+    </div>
+
+    <!-- PREMIOS -->
+    <div class="panel" id="panel-premios">
+      <div class="grid2">
+        <div class="card">
+          <h3>Premios</h3>
+          <div id="awardsBox" class="empty">Aún no hay nominaciones.</div>
+        </div>
+        <div class="card">
+          <h3>Críticos <small>Pitchfork · Rolling Stone · NME · Metacritic</small></h3>
+          <div id="criticsBox" class="empty">Todavía ningún medio reseñó tu música.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOGROS -->
+    <div class="panel" id="panel-logros">
+      <div class="card">
+        <div class="flexBetween"><h3>Logros</h3><span class="hint" id="achCount">0/0</span></div>
+        <div class="achieveGrid" id="achGrid"></div>
+      </div>
+    </div>
+
+    <!-- LEGADO -->
+    <div class="panel" id="panel-legado">
+      <div class="card">
+        <h3>Línea de tiempo — Eras</h3>
+        <div class="eraTimeline" id="eraTimeline"></div>
+      </div>
+      <div class="card" style="margin-top:18px;">
+        <h3>Estadísticas históricas</h3>
+        <div class="grid4" id="legacyStats"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal genérico -->
+<div class="modalBg" id="modalBg">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+/* ============================================================
+   ENCORE — motor del simulador
+   ============================================================ */
+
+const GENRES = ["Pop","Rock","Indie","Alternative","Dance Punk","Punk","Synthpop","New Wave","Hyperpop",
+"Bedroom Pop","Dream Pop","Folk","Country","Hip-Hop","Rap","Trap","R&B","Soul","Funk","Jazz","Blues","EDM",
+"House","Techno","Disco","Reggaeton","Latin Pop","K-Pop","J-Pop","Metal","Heavy Metal","Death Metal",
+"Black Metal","Lo-fi","Gospel","Classical","Experimental"];
+
+const PERSONALITIES = ["Carismático/a","Introvertido/a","Polémico/a","Perfeccionista","Rebelde","Soñador/a","Estratega","Sensible","Bromista","Misterioso/a"];
+
+const AVATARS = ["🎤","🎸","🥁","🎧","🎹","🌟","🖤","🦋","🔥","🌙","🎭","👑"];
+
+const PROD_FIRST = ["Mica","Kalu","Vale","Marcus","Renee","Théo","Sasha","Jonah","Priya","Beto","Nadia","Cole","Ines","Otis","Yara"];
+const PROD_LAST = ["Reeves","Solari","Nakamura","Duarte","Falkner","Beaumont","Okafor","Vance","Riscala","Marchetti","Kowalski","Hidalgo","Brandt","Osei","Delacroix"];
+const PROD_TAGS = ["indie","urbano","pop comercial","top mundial","lo-fi","experimental","radio-friendly","alternativo"];
+function randomProducerName(){ return PROD_FIRST[Math.floor(Math.random()*PROD_FIRST.length)]+" "+PROD_LAST[Math.floor(Math.random()*PROD_LAST.length)]; }
+let prodIdCounter = 1;
+function makeProducer(){
+  const cost = Math.round(300+Math.random()*4800);
+  const bonus = Math.round(5+ (cost/5000)*22 + Math.random()*6);
+  return { id:'prod_'+(prodIdCounter++), name: randomProducerName()+" ("+PROD_TAGS[Math.floor(Math.random()*PROD_TAGS.length)]+")", cost, bonus };
+}
+const SELF_PRODUCER = {id:'self', name:"Vos mismo/a (bedroom producer)", cost:0, bonus:2};
+
+const CAMPAIGNS = [
+  {id:"tiktok", name:"TikTok Push", cost:300, hype:14, follow:{tiktok:900}},
+  {id:"instagram", name:"Campaña Instagram", cost:250, hype:10, follow:{instagram:600}},
+  {id:"youtube", name:"Video en YouTube", cost:800, hype:16, follow:{youtube:500}},
+  {id:"radio", name:"Envío a radios", cost:600, hype:12, follow:{}},
+  {id:"tv", name:"Presentación en TV", cost:2200, hype:26, follow:{instagram:1200,tiktok:1200}},
+  {id:"influencers", name:"Colaboración con influencers", cost:1500, hype:20, follow:{tiktok:1800}},
+  {id:"challenge", name:"Challenge viral", cost:500, hype:22, follow:{tiktok:2500}},
+  {id:"entrevista", name:"Entrevista / podcast", cost:200, hype:8, follow:{}},
+  {id:"vallas", name:"Vallas publicitarias", cost:1200, hype:9, follow:{}},
+  {id:"mundial", name:"Campaña mundial completa", cost:6000, hype:38, follow:{tiktok:3000,instagram:2500,youtube:1500}},
+];
+
+const RANDOM_EVENTS = [
+  {t:"Te volviste viral en TikTok de la nada.", fx:s=>{s.followers.tiktok+=Math.round(2000+Math.random()*4000); s.artist.fame+=3;}, tag:"pink"},
+  {t:"Un medio importante te acusó de plagio (rumor sin fundamento).", fx:s=>{s.artist.fame-=2; s.fans.loyalty-=3;}, tag:"red"},
+  {t:"Un productor top se fijó en tu trabajo y quiere colaborar.", fx:s=>{s.artist.fame+=1;}, tag:"teal"},
+  {t:"Se filtraron demos inéditas tuyas en redes.", fx:s=>{s.fans.loyalty-=2; s.artist.fame+=2;}, tag:"red"},
+  {t:"Ganaste un patrocinio inesperado de una marca.", fx:s=>{s.money+=Math.round(500+Math.random()*1500);}, tag:"teal"},
+  {t:"Cancelaste una aparición por agotamiento.", fx:s=>{s.health.energy-=10; s.artist.fame-=1;}, tag:"red"},
+  {t:"Un fan club oficial se organizó en tu honor.", fx:s=>{s.fans.loyalty+=4;}, tag:"pink"},
+  {t:"Te compararon con otro artista y empezó un pequeño beef.", fx:s=>{s.artist.fame+=2; s.health.stress+=6;}, tag:"pink"},
+  {t:"Tu equipo descubrió un nuevo estudio con mejores tarifas.", fx:s=>{s.money+=300;}, tag:"teal"},
+  {t:"Rumores de ruptura / relación llenaron tu feed esta semana.", fx:s=>{s.artist.fame+=1; s.health.stress+=8;}, tag:"pink"},
+  {t:"Hackers intentaron filtrar tu próximo álbum (contenido a salvo).", fx:s=>{s.health.stress+=5;}, tag:"red"},
+  {t:"Una tendencia musical global está cambiando el gusto del público.", fx:s=>{}, tag:"teal", trend:true},
+  {t:"Te invitaron a un festival como sorpresa de último minuto.", fx:s=>{s.artist.fame+=3; s.money+=1200;}, tag:"pink"},
+  {t:"Necesitás descansar: tu energía está muy baja.", fx:s=>{}, tag:"red", onlyIfLowEnergy:true},
+];
+
+const ACHIEVEMENTS = [
+  {id:"first_song", name:"Primer acorde", desc:"Compón tu primera canción.", check:s=>s.songs.length>=1},
+  {id:"first_release", name:"Al aire", desc:"Lanzá tu primer proyecto.", check:s=>s.releasedCount>=1},
+  {id:"ten_songs", name:"Catálogo en crecimiento", desc:"Compón 10 canciones.", check:s=>s.songs.length>=10},
+  {id:"first_album", name:"Larga duración", desc:"Lanzá tu primer álbum.", check:s=>s.albums.length>=1},
+  {id:"first_million", name:"Primer millón", desc:"Alcanzá $1,000,000.", check:s=>s.money>=1000000},
+  {id:"hot100_top1", name:"Número uno", desc:"Llegá al #1 del Hot 100.", check:s=>s.everHitHot1},
+  {id:"b200_top1", name:"Álbum del momento", desc:"Llegá al #1 del Billboard 200.", check:s=>s.everHit2001},
+  {id:"first_grammy", name:"Primer Grammy", desc:"Ganá tu primer Grammy.", check:s=>s.awards.some(a=>a.name.includes("Grammy")&&a.won)},
+  {id:"million_fans", name:"Ejército de fans", desc:"Alcanzá 1,000,000 de fans.", check:s=>s.fans.count>=1000000},
+  {id:"world_tour", name:"Alrededor del mundo", desc:"Realizá una World Tour.", check:s=>s.tours.some(t=>t.type==='world')},
+  {id:"masters_lost", name:"Sin masters", desc:"Perdé los derechos de tus masters.", check:s=>s.label && s.label.mastersOwned===false},
+  {id:"artists_version", name:"(Tu Versión)", desc:"Regrabá un álbum entero.", check:s=>s.albums.some(a=>a.rerecorded)},
+  {id:"deluxe", name:"Edición extendida", desc:"Lanzá una edición Deluxe.", check:s=>s.albums.some(a=>a.deluxe)},
+  {id:"five_albums", name:"Discografía sólida", desc:"Lanzá 5 álbumes.", check:s=>s.albums.length>=5},
+  {id:"diamond", name:"Disco de Diamante", desc:"Un álbum supera los 10M en ventas equivalentes.", check:s=>s.albums.some(a=>a.equivSales>=10000000)},
+  {id:"billion_streams", name:"Mil millones", desc:"Superá 1,000,000,000 de streams acumulados.", check:s=>s.totalStreams>=1000000000},
+  {id:"ten_years", name:"Una carrera", desc:"Cumplí 10 años desde tu debut.", check:s=>s.week>=520},
+  {id:"survived_flop", name:"Resiliencia", desc:"Sobreviví a un lanzamiento fallido y seguiste adelante.", check:s=>s.hadFlop},
+  {id:"stadium", name:"Estadios llenos", desc:"Realizá una Stadium Tour.", check:s=>s.tours.some(t=>t.type==='stadium')},
+  {id:"indie_to_major", name:"El gran salto", desc:"Firmá con una discográfica major.", check:s=>s.label && s.label.tier==='major'},
+];
+
+const COUNTRIES_FOR_CHARTS = ["Hot 100","Billboard 200","Spotify Global","UK Charts","Latinoamérica"];
+
+const RIVAL_NAMES = ["Mira Volt","Kessler","Ivy Noon","The Faultline","Sable Rae","Nino Cruz","GLASS.","Lupe Storm","Rhys Marlow","Wandr","Tempo Fatale","Yuki Iro"];
+
+const CRITIC_OUTLETS = ["Pitchfork","Rolling Stone","NME","Metacritic"];
+const FESTIVALS = [
+  {name:"Coachella", fee:15000, fameNeeded:35}, {name:"Lollapalooza", fee:12000, fameNeeded:30},
+  {name:"Glastonbury", fee:18000, fameNeeded:45}, {name:"Primavera Sound", fee:9000, fameNeeded:20},
+  {name:"Rock in Rio", fee:14000, fameNeeded:38}, {name:"Tomorrowland", fee:20000, fameNeeded:50},
+];
+function certForUnits(units){
+  if(units>=10000000) return {label:"Diamante", cls:"diamond"};
+  if(units>=1000000) return {label:"Platino", cls:"platinum"};
+  if(units>=500000) return {label:"Oro", cls:"gold-cert"};
+  return null;
+}
+const SONG_WORD_A = ["Neon","Midnight","Golden","Broken","Velvet","Wildfire","Paper","Glass","Static","Lonely","Electric","Cherry","Ghost","Silver","Crimson","Falling","Runaway","Loverboy","Sundown","Reckless"];
+const SONG_WORD_B = ["Hearts","Dreams","Skyline","Nights","Bloom","Static","Tears","Symphony","Roses","Echo","Fever","Horizon","Memory","Halo","Parade","Lights","Shadows","Butterflies","Fire","Waves"];
+function randomSongTitle(){ return SONG_WORD_A[Math.floor(Math.random()*SONG_WORD_A.length)]+" "+SONG_WORD_B[Math.floor(Math.random()*SONG_WORD_B.length)]; }
+function randomAlbumTitle(){ return SONG_WORD_B[Math.floor(Math.random()*SONG_WORD_B.length)]+" "+["Vol. "+(1+Math.floor(Math.random()*3)),"","","(Deluxe)"][Math.floor(Math.random()*4)]; }
+
+const MEDIA_TITLES = [
+  {name:"Ciudad de Cristal", kind:"película"}, {name:"Últimas Luces", kind:"serie"},
+  {name:"El Silencio Después", kind:"película"}, {name:"Corazones de Neón", kind:"serie"},
+  {name:"Rumbo al Norte", kind:"película"}, {name:"La Caída", kind:"serie"},
+  {name:"Verano Eterno", kind:"película"}, {name:"Sombras del Puerto", kind:"serie"},
+  {name:"Nadie Vuelve Igual", kind:"película"}, {name:"Estación Final", kind:"serie"},
+];
+const SOUNDTRACK_THEMES = [
+  "una historia de amor y pérdida en una gran ciudad", "un thriller oscuro sobre venganza",
+  "una road trip de verano y amistad", "un drama familiar sobre volver a casa",
+  "una historia de superación en el mundo del deporte", "un romance de época melancólico",
+  "una fantasía juvenil sobre encontrar tu lugar en el mundo", "una serie sobre el ascenso y caída de una banda ficticia",
+];
+
+/* ---------- STATE ---------- */
+let state = null;
+
+function newGameState(setup){
+  const rivals = RIVAL_NAMES.map((n,i)=>({
+    name:n, genre:GENRES[Math.floor(Math.random()*GENRES.length)],
+    fame: 20+Math.random()*40, fans: Math.round(5000+Math.random()*40000),
+    hype:0, active:true,
+  }));
+  const hot100 = [];
+  const b200 = [];
+  rivals.forEach(r=>{
+    const n = 1+Math.floor(Math.random()*2);
+    for(let i=0;i<n;i++){
+      hot100.push({title:randomSongTitle(), artist:r.name, mine:false, hype:r.fame*0.8+Math.random()*30, weeksOn:Math.floor(Math.random()*20), peak:999, prevPos:999});
+    }
+    if(Math.random()<0.5){
+      b200.push({title:randomAlbumTitle()||r.name+" EP", artist:r.name, mine:false, hype:r.fame*0.7+Math.random()*25, weeksOn:Math.floor(Math.random()*15), peak:999, prevPos:999});
+    }
+  });
+  return {
+    week:1, year:1,
+    artist:{...setup, fame:setup.fame||0},
+    genres:setup.genres,
+    money: setup.econ==='alto'?15000:(setup.econ==='bajo'?800:3500),
+    fans:{count:0, loyalty:50},
+    health:{energy:100, stress:10, inspiration:70},
+    followers:{instagram:100,tiktok:50,x:80,youtube:20,spotify:0,applemusic:0},
+    songs:[], albums:[], eras:[], tours:[], awards:[], news:[],
+    label:null,
+    hot100, b200, chartHistoryMine:[],
+    rivals, releasedCount:0, everHitHot1:false, everHit2001:false, hadFlop:false,
+    totalStreams:0, unlockedAch:[], activePromo:[], invitations:[], filmWorks:[],
+    incomeThisWeek:0, expenseThisWeek:0, royaltiesTotal:0, sponsorTotal:0,
+    trendGenre: GENRES[Math.floor(Math.random()*GENRES.length)],
+    purchases:[],
+    producerPool:[makeProducer(),makeProducer(),makeProducer(),makeProducer(),makeProducer()],
+    unlockedProducers:[SELF_PRODUCER],
+    activeTour:null,
+    scheduledReleases:[],
+    labelOffers:[makeLabelOffer('mid'), makeLabelOffer('major')],
+    acceptedInvitations:[],
+  };
+}
+
+/* ---------- SETUP SCREEN ---------- */
+let setupStep = 1;
+let chosenAvatar = AVATARS[0];
+let chosenPersonalities = [];
+let chosenGenres = [];
+
+function initSetupUI(){
+  document.getElementById('stepDots').innerHTML = [1,2].map(i=>`<span class="${i<setupStep?'done':(i===setupStep?'active':'')}"><i></i></span>`).join('');
+  const avRow = document.getElementById('avatarRow');
+  avRow.innerHTML = AVATARS.map(a=>`<div class="avatarPick ${a===chosenAvatar?'sel':''}" data-a="${a}">${a}</div>`).join('');
+  avRow.querySelectorAll('.avatarPick').forEach(el=>el.onclick=()=>{ chosenAvatar=el.dataset.a; initSetupUI(); });
+
+  const pChips = document.getElementById('personalityChips');
+  pChips.innerHTML = PERSONALITIES.map(p=>`<div class="chip ${chosenPersonalities.includes(p)?'sel':''}" data-p="${p}">${p}</div>`).join('');
+  pChips.querySelectorAll('.chip').forEach(el=>el.onclick=()=>{
+    const p = el.dataset.p;
+    if(chosenPersonalities.includes(p)) chosenPersonalities = chosenPersonalities.filter(x=>x!==p);
+    else if(chosenPersonalities.length<2) chosenPersonalities.push(p);
+    initSetupUI();
+  });
+
+  const gChips = document.getElementById('genreChips');
+  gChips.innerHTML = GENRES.map(g=>`<div class="chip ${chosenGenres.includes(g)?'sel':''}" data-g="${g}">${g}</div>`).join('');
+  gChips.querySelectorAll('.chip').forEach(el=>el.onclick=()=>{
+    const g = el.dataset.g;
+    if(chosenGenres.includes(g)) chosenGenres = chosenGenres.filter(x=>x!==g);
+    else if(chosenGenres.length<3) chosenGenres.push(g);
+    initSetupUI();
+  });
+
+  document.getElementById('btnBack').style.visibility = setupStep===1?'hidden':'visible';
+  document.getElementById('btnNext').textContent = setupStep===2?'Comenzar carrera →':'Siguiente →';
+}
+
+document.getElementById('f_fame').oninput = e=>document.getElementById('f_fameVal').textContent = e.target.value;
+document.querySelectorAll('#diffChips .chip').forEach(el=>el.onclick=()=>{
+  document.querySelectorAll('#diffChips .chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+});
+
+document.getElementById('btnBack').onclick = ()=>{ if(setupStep>1){ setupStep--; document.getElementById('step'+setupStep).style.display='block'; document.getElementById('step'+(setupStep+1)).style.display='none'; initSetupUI(); } };
+document.getElementById('btnNext').onclick = ()=>{
+  if(setupStep===1){
+    if(!document.getElementById('f_stage').value.trim()){ alert('Poné un nombre artístico.'); return; }
+    setupStep=2; document.getElementById('step1').style.display='none'; document.getElementById('step2').style.display='block'; initSetupUI();
+  } else {
+    if(chosenGenres.length===0){ alert('Elegí al menos un género musical.'); return; }
+    startGame();
+  }
+};
+
+function startGame(){
+  const diffEl = document.querySelector('#diffChips .chip.sel');
+  const setup = {
+    stage: document.getElementById('f_stage').value.trim(),
+    real: document.getElementById('f_real').value.trim(),
+    age: parseInt(document.getElementById('f_age').value)||19,
+    gender: document.getElementById('f_gender').value,
+    pronouns: document.getElementById('f_pronouns').value,
+    country: document.getElementById('f_country').value.trim()||"—",
+    city: document.getElementById('f_city').value.trim()||"—",
+    econ: document.getElementById('f_econ').value,
+    bio: document.getElementById('f_bio').value.trim(),
+    avatar: chosenAvatar,
+    personality: chosenPersonalities,
+    genres: chosenGenres,
+    fame: parseInt(document.getElementById('f_fame').value)||0,
+    difficulty: diffEl?diffEl.dataset.v:'normal',
+  };
+  state = newGameState(setup);
+  addNews("Debut", `${setup.stage} entra a la industria musical desde ${setup.city}, ${setup.country}.`, "teal");
+  document.getElementById('setupScreen').style.display='none';
+  document.getElementById('game').style.display='block';
+  buildStaticSelectors();
+  renderAll();
+}
+
+/* ---------- HELPERS ---------- */
+function fmtMoney(n){ n=Math.round(n); return (n<0?'-$':'$')+Math.abs(n).toLocaleString('es-ES'); }
+function fmtNum(n){ return Math.round(n).toLocaleString('es-ES'); }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function addNews(tag, text, cls){
+  state.news.unshift({tag, text, cls:cls||'gold', week:state.week});
+  if(state.news.length>60) state.news.pop();
+}
+function weeksToDate(w){
+  const year = 1 + Math.floor((w-1)/52);
+  const week = ((w-1)%52)+1;
+  return `Año ${year} · Semana ${week}`;
+}
+
+/* ---------- STATIC SELECTORS ---------- */
+function buildStaticSelectors(){
+  const sg = document.getElementById('s_genre');
+  sg.innerHTML = state.genres.map(g=>`<option>${g}</option>`).join('') + GENRES.filter(g=>!state.genres.includes(g)).map(g=>`<option>${g}</option>`).join('');
+  const sc = document.getElementById('s_collab');
+  sc.innerHTML = '<option value="">Ninguna</option>' + state.rivals.map((r,i)=>`<option value="${i}">${r.name} (${r.genre})</option>`).join('');
+  renderProducerBox();
+
+  document.getElementById('s_orig').oninput = e=>document.getElementById('s_origVal').textContent=e.target.value;
+  document.getElementById('s_budget').oninput = e=>{
+    document.getElementById('s_budgetVal').textContent=e.target.value;
+    document.getElementById('s_budgetCost').textContent = 'Costo estimado: '+fmtMoney(parseInt(e.target.value)*15);
+  };
+  document.getElementById('s_budgetCost').textContent = 'Costo estimado: '+fmtMoney(30*15);
+
+  const soc = document.getElementById('soc_platform');
+  soc.innerHTML = Object.keys(state.followers).map(p=>`<option value="${p}">${platformLabel(p)}</option>`).join('');
+
+  const pType = document.getElementById('p_type');
+  pType.innerHTML = CAMPAIGNS.map(c=>`<option value="${c.id}">${c.name} — ${fmtMoney(c.cost)}</option>`).join('');
+  pType.onchange = updateCampaignCost; updateCampaignCost();
+
+  document.getElementById('r_type').onchange = ()=>{ currentTracklist=[]; updateReleaseFormVisibility(); renderUnreleasedPicker(); };
+  updateReleaseFormVisibility();
+
+  document.getElementById('r_eraYes').onclick = ()=>{ document.getElementById('r_eraYes').classList.add('sel'); document.getElementById('r_eraNo').classList.remove('sel'); };
+  document.getElementById('r_eraNo').onclick = ()=>{ document.getElementById('r_eraNo').classList.add('sel'); document.getElementById('r_eraYes').classList.remove('sel'); };
+}
+function renderProducerBox(){
+  const box = document.getElementById('producerBox');
+  if(!box) return;
+  const shown = [...state.unlockedProducers, ...state.producerPool.filter(p=>!state.unlockedProducers.some(u=>u.id===p.id))];
+  box.innerHTML = shown.map(p=>{
+    const owned = state.unlockedProducers.some(u=>u.id===p.id);
+    return `<label style="display:flex; align-items:center; gap:8px; padding:5px 0; font-size:12.5px; border-bottom:1px solid var(--line);">
+      <input type="checkbox" value="${p.id}" class="pickProd">
+      <span style="flex:1;">${p.name} ${owned?'<span class="hint">· de confianza</span>':'<span class="hint">· disponible esta temporada</span>'}</span>
+      <span class="mono">${fmtMoney(p.cost)} · +${p.bonus}</span>
+    </label>`;
+  }).join('');
+}
+function renderFilmAssignmentSelector(){
+  const el = document.getElementById('s_forInvitation');
+  if(!el) return;
+  el.innerHTML = '<option value="">Ninguno (canción propia)</option>' + state.acceptedInvitations.map(inv=>`<option value="${inv.id}">${inv.media} (${inv.kind==='soundtrack'?'banda sonora':'canción'})</option>`).join('');
+}
+function platformLabel(p){
+  return {instagram:"Instagram",tiktok:"TikTok",x:"X",youtube:"YouTube",spotify:"Spotify",applemusic:"Apple Music"}[p]||p;
+}
+function updateCampaignCost(){
+  const c = CAMPAIGNS.find(c=>c.id===document.getElementById('p_type').value);
+  document.getElementById('p_costNote').textContent = c? `Costo: ${fmtMoney(c.cost)} · Hype +${c.hype}`:'';
+}
+function updateReleaseFormVisibility(){
+  const t = document.getElementById('r_type').value;
+  document.getElementById('r_eraColorField').style.display = t==='album'?'flex':'none';
+  document.getElementById('r_themeField').style.display = (t==='album'||t==='mixtape')?'flex':'none';
+}
+
+/* ---------- TABS ---------- */
+document.getElementById('tabsBar').addEventListener('click', e=>{
+  if(e.target.tagName!=='BUTTON') return;
+  document.querySelectorAll('#tabsBar button').forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+e.target.dataset.tab).classList.add('active');
+  renderAll();
+});
+
+/* ---------- SONG CREATION ---------- */
+document.getElementById('btnCreateSong').onclick = ()=>{
+  const title = document.getElementById('s_title').value.trim();
+  if(!title){ alert('Ponele un título a la canción.'); return; }
+  const budget = parseInt(document.getElementById('s_budget').value);
+  const cost = budget*15;
+
+  const prodIds = Array.from(document.querySelectorAll('.pickProd:checked')).map(c=>c.value);
+  const pool = [...state.unlockedProducers, ...state.producerPool];
+  const chosenProds = prodIds.length? prodIds.map(id=>pool.find(p=>p.id===id)).filter(Boolean) : [SELF_PRODUCER];
+  const prodCost = chosenProds.reduce((a,p)=>a+p.cost,0);
+  const prodBonus = chosenProds.length>1 ? chosenProds.reduce((a,p)=>a+p.bonus,0)*0.65 : chosenProds.reduce((a,p)=>a+p.bonus,0);
+  const prodNames = chosenProds.map(p=>p.name).join(' + ');
+
+  if(state.money < cost+prodCost){ alert('No tenés suficiente dinero para este presupuesto y estos productores.'); return; }
+
+  const orig = parseInt(document.getElementById('s_orig').value);
+  const comm = 100-orig;
+  const genre = document.getElementById('s_genre').value;
+  const trendBonus = genre===state.trendGenre?8:0;
+
+  const collabIdx = document.getElementById('s_collab').value;
+  const collab = collabIdx!==''? state.rivals[parseInt(collabIdx)] : null;
+  let collabCost = 0, collabVirality = 0, collabFame = 0;
+  if(collab){
+    collabCost = Math.round(500+collab.fame*40);
+    if(state.money < cost+prodCost+collabCost){ alert('No te alcanza para pagar esta colaboración.'); return; }
+    collabVirality = 10+collab.fame*0.15;
+    collabFame = 1+collab.fame*0.04;
+  }
+
+  const quality = clamp(30 + budget*0.35 + prodBonus + Math.random()*15, 0, 100);
+  const virality = clamp(comm*0.5 + trendBonus + collabVirality + Math.random()*25, 0, 100);
+  const artistic = clamp(orig*0.7 + quality*0.2 + Math.random()*10, 0, 100);
+  const complexity = clamp(orig*0.6 + Math.random()*20, 0, 100);
+  const commercial = clamp(comm*0.7 + Math.random()*15, 0, 100);
+
+  state.money -= (cost+prodCost+collabCost);
+  state.expenseThisWeek += (cost+prodCost+collabCost);
+  state.artist.fame = clamp(state.artist.fame+collabFame,0,100);
+
+  // los productores rotativos elegidos quedan guardados como "de confianza" para siempre
+  chosenProds.forEach(p=>{ if(!state.unlockedProducers.some(u=>u.id===p.id)) state.unlockedProducers.push(p); });
+
+  const invId = document.getElementById('s_forInvitation').value;
+  const inv = invId? state.acceptedInvitations.find(i=>i.id===invId) : null;
+
+  const song = {
+    id: 'song_'+Date.now()+Math.random(),
+    title, genre, dur: parseFloat(document.getElementById('s_dur').value)||3,
+    bpm: parseInt(document.getElementById('s_bpm').value)||110,
+    key: document.getElementById('s_key').value,
+    lang: document.getElementById('s_lang').value,
+    explicit: document.getElementById('s_exp').value==='true',
+    producer: prodNames, collab: collab?collab.name:null, quality, virality, artistic, complexity, commercial,
+    released:false, isSingle:false, streams:0, sales:0, week:state.week, hype:0, albumId:null, scheduled:false,
+    forInvitation: inv? inv.id : null, soundtrackFor: inv? inv.media : null,
+  };
+  state.songs.push(song);
+  document.getElementById('s_title').value='';
+
+  if(inv && inv.kind==='song'){
+    // encargo de una sola canción: se entrega y se cobra al toque, compuesta por vos mismo
+    song.released = true; song.releaseWeek = state.week; song.isSingle = true;
+    state.hot100.push({title:song.title, artist:state.artist.stage, mine:true, hype:song.virality*0.6+state.artist.fame*0.6+15, weeksOn:0, peak:999, prevPos:999});
+    state.filmWorks.push({title:song.title, media:inv.media, week:state.week});
+    state.money += inv.pay; state.incomeThisWeek += inv.pay;
+    state.artist.fame = clamp(state.artist.fame+inv.prestige,0,100);
+    state.acceptedInvitations = state.acceptedInvitations.filter(i=>i.id!==inv.id);
+    addNews('Banda sonora', `Entregaste "${song.title}" para la ${inv.mediaType} "${inv.media}".`, 'pink');
+  } else if(inv && inv.kind==='soundtrack'){
+    addNews('Banda sonora', `Compusiste "${song.title}" para la banda sonora de "${inv.media}" (todavía sin entregar).`, 'teal');
+  } else if(collab){
+    addNews('Colaboración', `Grabaste "${title}" junto a ${collab.name}.`, 'pink');
+    if(Math.random()<0.12) addNews('Rumor', `Fans especulan tensión entre vos y ${collab.name} tras la colaboración.`, 'red');
+  } else {
+    addNews('Estudio', `Terminaste de producir "${title}"${chosenProds.length>1?` junto a ${chosenProds.length} productores`:''}.`, 'teal');
+  }
+  renderAll();
+};
+
+/* ---------- RELEASES ---------- */
+let currentTracklist = []; // array of song ids, in order
+function unreleasedSongs(){ return state.songs.filter(s=>!s.released); }
+function songsAvailableForRelease(type){
+  const unreleased = state.songs.filter(s=>!s.released && !s.scheduled && !currentTracklist.includes(s.id));
+  if(type==='album'||type==='mixtape'){
+    const orphanSingles = state.songs.filter(s=>s.released && !s.albumId && !s.scheduled && !currentTracklist.includes(s.id));
+    return [...unreleased.map(s=>({s, already:false})), ...orphanSingles.map(s=>({s, already:true}))];
+  }
+  return unreleased.map(s=>({s, already:false}));
+}
+function renderUnreleasedPicker(){
+  const box = document.getElementById('unreleasedList');
+  const type = document.getElementById('r_type').value;
+  if(type==='single' && currentTracklist.length>=1){
+    // un single solo permite una canción; no mostrar más opciones
+  }
+  const entries = songsAvailableForRelease(type);
+  if(entries.length===0){ box.innerHTML = '<div class="empty">No hay más canciones disponibles. Andá al Estudio.</div>'; }
+  else box.innerHTML = entries.map(({s,already})=>`
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 0; font-size:12.5px;">
+      <span>${s.title} <span class="meta">· ${s.genre} · Cal ${Math.round(s.quality)} ${already?'· ya lanzado como single (conserva streams)':''}</span></span>
+      <button class="btn btn-sm btn-ghost" data-add="${s.id}">+ agregar</button>
+    </div>`).join('');
+  box.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{
+    if(type==='single' && currentTracklist.length>=1){ alert('Un single es una sola canción. Quitá la actual primero.'); return; }
+    currentTracklist.push(b.dataset.add);
+    renderUnreleasedPicker(); renderTracklistBox();
+  });
+  renderTracklistBox();
+}
+function renderTracklistBox(){
+  const box = document.getElementById('tracklistBox');
+  if(currentTracklist.length===0){ box.innerHTML = '<div class="empty" style="padding:10px 0;">Todavía no agregaste canciones.</div>'; return; }
+  box.innerHTML = currentTracklist.map((id,i)=>{
+    const s = state.songs.find(x=>x.id===id);
+    if(!s) return '';
+    return `<div style="display:flex; align-items:center; gap:6px; padding:5px 0; font-size:12.5px; border-bottom:1px solid var(--line);">
+      <span class="mono" style="color:var(--text-dim); width:20px;">${i+1}.</span>
+      <span style="flex:1;">${s.title}</span>
+      <button class="btn btn-sm btn-ghost" data-up="${id}" ${i===0?'disabled':''}>▲</button>
+      <button class="btn btn-sm btn-ghost" data-down="${id}" ${i===currentTracklist.length-1?'disabled':''}>▼</button>
+      <button class="btn btn-sm btn-danger" data-rm="${id}">×</button>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{
+    const i = currentTracklist.indexOf(b.dataset.up);
+    if(i>0){ [currentTracklist[i-1],currentTracklist[i]]=[currentTracklist[i],currentTracklist[i-1]]; renderTracklistBox(); }
+  });
+  box.querySelectorAll('[data-down]').forEach(b=>b.onclick=()=>{
+    const i = currentTracklist.indexOf(b.dataset.down);
+    if(i<currentTracklist.length-1){ [currentTracklist[i+1],currentTracklist[i]]=[currentTracklist[i],currentTracklist[i+1]]; renderTracklistBox(); }
+  });
+  box.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{
+    currentTracklist = currentTracklist.filter(id=>id!==b.dataset.rm);
+    renderUnreleasedPicker(); renderTracklistBox();
+  });
+}
+
+document.getElementById('btnRelease').onclick = ()=>{
+  const type = document.getElementById('r_type').value;
+  const picked = currentTracklist.slice();
+  if(picked.length===0){ alert('Agregá al menos una canción al tracklist.'); return; }
+  if(type==='single' && picked.length>1){ alert('Un single es una sola canción.'); return; }
+  if(type==='ep' && (picked.length<3||picked.length>6)){ alert('Un EP necesita entre 3 y 6 canciones.'); return; }
+  if((type==='album'||type==='mixtape') && picked.length<6){ if(!confirm('Un álbum suele tener 6+ canciones. ¿Lanzar de todas formas?')) return; }
+  const theme = document.getElementById('r_theme').value.trim();
+  if((type==='album'||type==='mixtape') && !theme){ alert('Contanos la temática o concepto del álbum antes de lanzarlo.'); return; }
+  const isEra = document.getElementById('r_eraYes').classList.contains('sel');
+  const name = document.getElementById('r_name').value.trim() || (type==='single'? state.songs.find(s=>s.id===picked[0]).title : 'Proyecto sin título');
+  const delay = parseInt(document.getElementById('r_when').value)||0;
+
+  const data = {
+    type, picked, name, theme, isEra,
+    color: document.getElementById('r_eraColor').value,
+    strategy: document.getElementById('r_strategy').value,
+  };
+
+  if(delay===0){
+    performRelease(data);
+    addNews('Lanzamiento', `¡"${name}" ya está disponible!`, 'pink');
+  } else {
+    picked.forEach(id=>{ const s = state.songs.find(x=>x.id===id); if(s && !s.released) s.scheduled = true; });
+    state.scheduledReleases.push({ releaseWeek: state.week+delay, announcedWeek: state.week, data });
+    addNews('Anuncio', `Anunciaste "${name}" — sale en ${delay} semanas.`, 'teal');
+  }
+  document.getElementById('r_name').value=''; document.getElementById('r_theme').value='';
+  currentTracklist = [];
+  renderAll();
+};
+
+function performRelease(data){
+  const {type, picked, name, theme, isEra, color, strategy} = data;
+  const songs = picked.map(id=>state.songs.find(s=>s.id===id)).filter(Boolean);
+  if(songs.length===0) return;
+  const newlyReleasedSongs = [];
+  songs.forEach(s=>{
+    s.scheduled = false;
+    if(!s.released){
+      s.released=true; s.releaseWeek=state.week; if(type==='single') s.isSingle=true;
+      newlyReleasedSongs.push(s);
+    }
+  });
+
+  const avgQ = songs.reduce((a,s)=>a+s.quality,0)/songs.length;
+  const avgV = songs.reduce((a,s)=>a+s.virality,0)/songs.length;
+  const avgArt = songs.reduce((a,s)=>a+s.artistic,0)/songs.length;
+
+  const project = {
+    id:'rel_'+Date.now()+Math.random(), name, type, songIds:picked, week:state.week,
+    color, avgQ, avgV, avgArt,
+    strategy, concept: theme,
+    hype: avgV*0.6 + state.artist.fame*0.4, equivSales:0, criticScore: Math.round(40+avgArt*0.5+Math.random()*15),
+    deluxe:false, rerecorded:false, reviews:[], collab:null, soundtrack:false,
+  };
+
+  if(type==='album'||type==='mixtape'){
+    songs.forEach(s=>{ s.albumId = project.id; });
+    project.reviews = CRITIC_OUTLETS.map(o=>({
+      outlet:o, score: clamp(Math.round((40+avgArt*0.4+avgQ*0.3+Math.random()*20-10)), 0, 100)
+    }));
+    state.albums.push(project);
+    if(isEra) state.eras.push({name, album:project.id, color:project.color, startWeek:state.week, concept:theme});
+  }
+  state.releasedCount++;
+  const reusedCount = songs.length - newlyReleasedSongs.length;
+  addNews('Lanzamiento', `¡"${name}" ya está disponible! (${labelForType(type)})${reusedCount>0?` — incluye ${reusedCount} single(s) que ya conocías`:''}${(type==='album'||type==='mixtape')&&!isEra?' — no cuenta como nueva era':''}`, 'pink');
+  pushToCharts(project, newlyReleasedSongs, type);
+}
+function labelForType(t){ return {single:'Single', ep:'EP', album:'Álbum', mixtape:'Mixtape'}[t]||t; }
+
+function renderScheduledBox(){
+  const box = document.getElementById('scheduledBox');
+  if(!state.scheduledReleases.length){ box.innerHTML = '<div class="empty">No tenés lanzamientos anunciados todavía.</div>'; return; }
+  box.innerHTML = state.scheduledReleases.slice().sort((a,b)=>a.releaseWeek-b.releaseWeek).map(sr=>`
+    <div class="miniStat"><span class="lab">${sr.data.name} <span class="hint">(${labelForType(sr.data.type)})</span></span><span class="val">en ${sr.releaseWeek-state.week} sem.</span></div>
+  `).join('');
+}
+
+/* ---------- INVITACIONES A BANDAS SONORAS ---------- */
+function renderInvitations(){
+  const box = document.getElementById('invitationsBox');
+  let html = '';
+  if(state.invitations.length){
+    html += state.invitations.map(inv=>`
+      <div style="border:1px solid var(--line); border-radius:8px; padding:10px; margin-bottom:8px;">
+        <b style="font-size:13px;">${inv.media}</b> <span class="hint">(${inv.mediaType})</span><br>
+        <span class="hint">Piden ${inv.kind==='soundtrack'?'la banda sonora completa':'una canción'} sobre: "${inv.theme}"</span><br>
+        <span class="hint">Pago: ${fmtMoney(inv.pay)} · Prestigio +${inv.prestige}</span><br>
+        <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+          <button class="btn btn-sm btn-primary" data-acc="${inv.id}">Componer automático</button>
+          <button class="btn btn-sm btn-teal" data-man="${inv.id}">Componerlo yo mismo/a</button>
+          <button class="btn btn-sm btn-ghost" data-dec="${inv.id}">Rechazar</button>
+        </div>
+      </div>
+    `).join('');
+  }
+  if(state.acceptedInvitations.length){
+    html += state.acceptedInvitations.map(inv=>{
+      const tagged = state.songs.filter(s=>s.forInvitation===inv.id && !s.released);
+      return `<div style="border:1px solid var(--teal); border-radius:8px; padding:10px; margin-bottom:8px;">
+        <b style="font-size:13px;">${inv.media}</b> <span class="hint">— encargo tuyo, sobre "${inv.theme}"</span><br>
+        <span class="hint">${inv.kind==='soundtrack'? `Canciones compuestas para este encargo: ${tagged.length} (mín. 3)` : 'Andá al Estudio y elegí este encargo al componer tu canción.'}</span><br>
+        ${inv.kind==='soundtrack'?`<button class="btn btn-sm btn-primary" style="margin-top:8px;" data-deliver="${inv.id}" ${tagged.length<3?'disabled':''}>Entregar banda sonora</button>`:''}
+      </div>`;
+    }).join('');
+  }
+  box.innerHTML = html || '<div class="empty">Por ahora no tenés invitaciones pendientes. Aparecen a medida que crece tu fama.</div>';
+  box.querySelectorAll('[data-acc]').forEach(b=>b.onclick=()=>acceptInvitation(b.dataset.acc));
+  box.querySelectorAll('[data-dec]').forEach(b=>b.onclick=()=>{
+    state.invitations = state.invitations.filter(i=>i.id!==b.dataset.dec);
+    addNews('Invitación', 'Rechazaste una propuesta de banda sonora.', 'teal');
+    renderAll();
+  });
+  box.querySelectorAll('[data-man]').forEach(b=>b.onclick=()=>{
+    const inv = state.invitations.find(i=>i.id===b.dataset.man);
+    if(!inv) return;
+    state.invitations = state.invitations.filter(i=>i.id!==inv.id);
+    state.acceptedInvitations.push(inv);
+    addNews('Invitación', `Aceptaste componer vos mismo/a para "${inv.media}". Andá al Estudio.`, 'teal');
+    renderAll();
+  });
+  box.querySelectorAll('[data-deliver]').forEach(b=>b.onclick=()=>finalizeManualSoundtrack(b.dataset.deliver));
+}
+function finalizeManualSoundtrack(invId){
+  const inv = state.acceptedInvitations.find(i=>i.id===invId);
+  if(!inv) return;
+  const tracks = state.songs.filter(s=>s.forInvitation===invId && !s.released);
+  if(tracks.length<3) return;
+  tracks.forEach(s=>{ s.released=true; s.releaseWeek=state.week; });
+  const avgQ = tracks.reduce((a,s)=>a+s.quality,0)/tracks.length;
+  const avgArt = tracks.reduce((a,s)=>a+s.artistic,0)/tracks.length;
+  const project = {
+    id:'rel_'+Date.now()+Math.random(), name:`${inv.media} (Banda Sonora Original)`, type:'album',
+    songIds:tracks.map(s=>s.id), week:state.week, color:"#39C0C8", avgQ, avgV:avgQ*0.7, avgArt,
+    strategy:'mundial', concept:inv.theme, hype:avgQ*0.5+state.artist.fame*0.5, equivSales:0,
+    criticScore: Math.round(45+avgArt*0.5+Math.random()*15), deluxe:false, rerecorded:false,
+    reviews: CRITIC_OUTLETS.map(o=>({outlet:o, score: clamp(Math.round(45+avgArt*0.4+Math.random()*20),0,100)})),
+    collab:null, soundtrack:true,
+  };
+  tracks.forEach(s=>{ s.albumId = project.id; });
+  state.albums.push(project);
+  tracks.forEach(s=>state.hot100.push({title:s.title, artist:state.artist.stage, mine:true, hype:s.virality*0.5+state.artist.fame*0.5, weeksOn:0, peak:999, prevPos:999}));
+  state.b200.push({title:project.name, artist:state.artist.stage, mine:true, hype:avgQ*0.5+state.artist.fame*0.7, weeksOn:0, peak:999, prevPos:999});
+  state.filmWorks.push({title:project.name, media:inv.media, week:state.week});
+  state.releasedCount++;
+  state.money += inv.pay; state.incomeThisWeek += inv.pay;
+  state.artist.fame = clamp(state.artist.fame+inv.prestige,0,100);
+  state.acceptedInvitations = state.acceptedInvitations.filter(i=>i.id!==invId);
+  addNews('Banda sonora', `Entregaste la banda sonora completa de "${inv.media}", compuesta por vos.`, 'pink');
+  renderAll();
+}
+
+function acceptInvitation(id){
+  const inv = state.invitations.find(i=>i.id===id);
+  if(!inv) return;
+  state.invitations = state.invitations.filter(i=>i.id!==id);
+
+  const pastSongs = state.songs.filter(s=>s.released);
+  const baseQ = pastSongs.length? pastSongs.reduce((a,s)=>a+s.quality,0)/pastSongs.length : 55;
+  const baseV = pastSongs.length? pastSongs.reduce((a,s)=>a+s.virality,0)/pastSongs.length : 45;
+  const baseArt = pastSongs.length? pastSongs.reduce((a,s)=>a+s.artistic,0)/pastSongs.length : 50;
+
+  if(inv.kind==='song'){
+    const s = {
+      id:'song_'+Date.now()+Math.random(), title:`${inv.media} (Tema Original)`, genre:state.genres[0]||GENRES[0],
+      dur:3.2, bpm:100, key:"Sol M", lang:"Español", explicit:false, producer:"Encargo de estudio", collab:null,
+      quality: clamp(baseQ+Math.random()*10,0,100), virality: clamp(baseV+Math.random()*10,0,100),
+      artistic: clamp(baseArt+5,0,100), complexity: clamp(baseArt*0.6,0,100), commercial: clamp(baseV*0.7,0,100),
+      released:true, isSingle:true, streams:0, sales:0, week:state.week, releaseWeek:state.week, hype:0, albumId:null,
+      soundtrackFor: inv.media,
+    };
+    state.songs.push(s);
+    state.hot100.push({title:s.title, artist:state.artist.stage, mine:true, hype:s.virality*0.6+state.artist.fame*0.6+15, weeksOn:0, peak:999, prevPos:999});
+    state.filmWorks.push({title:s.title, media:inv.media, week:state.week});
+    state.money += inv.pay; state.incomeThisWeek += inv.pay;
+    state.artist.fame = clamp(state.artist.fame+inv.prestige,0,100);
+    addNews('Banda sonora', `Compusiste "${s.title}" para la ${inv.mediaType} "${inv.media}".`, 'pink');
+  } else {
+    const n = 5+Math.floor(Math.random()*3);
+    const tracks = [];
+    for(let i=0;i<n;i++){
+      const s = {
+        id:'song_'+Date.now()+Math.random()+i, title:`${inv.media} — Tema ${i+1}`, genre:state.genres[0]||GENRES[0],
+        dur:2.8, bpm:95, key:"Re m", lang:"Instrumental", explicit:false, producer:"Encargo de estudio", collab:null,
+        quality: clamp(baseQ+Math.random()*10,0,100), virality: clamp(baseV*0.7+Math.random()*10,0,100),
+        artistic: clamp(baseArt+8,0,100), complexity: clamp(baseArt*0.7,0,100), commercial: clamp(baseV*0.5,0,100),
+        released:true, isSingle:i===0, streams:0, sales:0, week:state.week, releaseWeek:state.week, hype:0, albumId:null,
+        soundtrackFor: inv.media,
+      };
+      state.songs.push(s); tracks.push(s);
+    }
+    const avgQ = tracks.reduce((a,s)=>a+s.quality,0)/tracks.length;
+    const avgArt = tracks.reduce((a,s)=>a+s.artistic,0)/tracks.length;
+    const project = {
+      id:'rel_'+Date.now(), name:`${inv.media} (Banda Sonora Original)`, type:'album',
+      songIds:tracks.map(s=>s.id), week:state.week, color:"#39C0C8", avgQ, avgV:avgQ*0.7, avgArt,
+      strategy:'mundial', concept:inv.theme, hype:avgQ*0.5+state.artist.fame*0.5, equivSales:0,
+      criticScore: Math.round(45+avgArt*0.5+Math.random()*15), deluxe:false, rerecorded:false,
+      reviews: CRITIC_OUTLETS.map(o=>({outlet:o, score: clamp(Math.round(45+avgArt*0.4+Math.random()*20),0,100)})),
+      collab:null, soundtrack:true,
+    };
+    tracks.forEach(s=>{ s.albumId = project.id; });
+    state.albums.push(project);
+    state.eras.push({name:project.name, album:project.id, color:project.color, startWeek:state.week, concept:inv.theme});
+    tracks.forEach(s=>state.hot100.push({title:s.title, artist:state.artist.stage, mine:true, hype:s.virality*0.5+state.artist.fame*0.5, weeksOn:0, peak:999, prevPos:999}));
+    state.b200.push({title:project.name, artist:state.artist.stage, mine:true, hype:avgQ*0.5+state.artist.fame*0.7, weeksOn:0, peak:999, prevPos:999});
+    state.filmWorks.push({title:project.name, media:inv.media, week:state.week});
+    state.releasedCount++;
+    state.money += inv.pay; state.incomeThisWeek += inv.pay;
+    state.artist.fame = clamp(state.artist.fame+inv.prestige,0,100);
+    addNews('Banda sonora', `Compusiste la banda sonora completa de la ${inv.mediaType} "${inv.media}".`, 'pink');
+  }
+  renderAll();
+}
+
+function pushToCharts(project, newSongs, type){
+  if(type==='single'||type==='ep'||type==='mixtape'||type==='album'){
+    // en un álbum entran TODAS sus canciones al Hot 100, no solo los singles (como en la industria real)
+    newSongs.forEach(s=>{
+      const albumPenalty = (type==='album'&&!s.isSingle) ? 0.75 : 1;
+      state.hot100.push({title:s.title, artist:state.artist.stage, mine:true, hype:(s.virality*0.6+state.artist.fame*0.6+Math.random()*20)*albumPenalty, weeksOn:0, peak:999, prevPos:999});
+    });
+  }
+  if(type==='album'||type==='mixtape'){
+    state.b200.push({title:project.name, artist:state.artist.stage, mine:true, hype:project.avgQ*0.5+state.artist.fame*0.7+Math.random()*20, weeksOn:0, peak:999, prevPos:999});
+  }
+}
+
+/* ---------- PROMOTION ---------- */
+function refreshProjectSelector(){
+  const sel = document.getElementById('p_project');
+  const projects = [...state.songs.filter(s=>s.released).map(s=>({id:s.id,label:s.title})), ...state.albums.map(a=>({id:a.id,label:a.name}))];
+  sel.innerHTML = projects.length? projects.map(p=>`<option value="${p.id}">${p.label}</option>`).join('') : '<option value="">(sin proyectos lanzados)</option>';
+}
+document.getElementById('btnCampaign').onclick = ()=>{
+  const camp = CAMPAIGNS.find(c=>c.id===document.getElementById('p_type').value);
+  const projId = document.getElementById('p_project').value;
+  if(!projId){ alert('Lanzá algo primero.'); return; }
+  if(state.money<camp.cost){ alert('No tenés suficiente dinero.'); return; }
+  state.money -= camp.cost; state.expenseThisWeek += camp.cost;
+  Object.entries(camp.follow).forEach(([k,v])=>{ state.followers[k]=(state.followers[k]||0)+v; });
+  // find in charts
+  const song = state.hot100.find(h=>state.songs.find(s=>s.id===projId && s.title===h.title && h.mine));
+  const alb = state.b200.find(b=>state.albums.find(a=>a.id===projId && a.name===b.title && b.mine));
+  if(song) song.hype += camp.hype;
+  if(alb) alb.hype += camp.hype;
+  state.artist.fame = clamp(state.artist.fame + camp.hype*0.1, 0, 100);
+  addNews('Promoción', `Ejecutaste "${camp.name}".`, 'teal');
+  renderAll();
+};
+
+/* ---------- SOCIAL POSTS ---------- */
+document.getElementById('btnPost').onclick = ()=>{
+  if(state.health.energy<8){ alert('Muy poca energía para publicar.'); return; }
+  const platform = document.getElementById('soc_platform').value;
+  const type = document.getElementById('soc_type').value;
+  let gain = 100+Math.random()*400;
+  let energyCost = 4;
+  if(type==='live'){ gain*=1.8; energyCost=10; }
+  if(type==='polemica'){ gain*=3; state.fans.loyalty-=3; state.artist.fame+=2; energyCost=6; }
+  if(type==='challenge'){ gain*=2.4; energyCost=8; }
+  state.followers[platform] += Math.round(gain);
+  state.health.energy = clamp(state.health.energy-energyCost,0,100);
+  addNews('Redes', `Publicaste en ${platformLabel(platform)} (${type}).`, 'gold');
+  renderAll();
+};
+
+/* ---------- TOURS ---------- */
+const TOUR_INFO = {
+  showcase:{cap:300, costPerDate:400, fameNeeded:0},
+  club:{cap:800, costPerDate:1500, fameNeeded:5},
+  theatre:{cap:2500, costPerDate:5000, fameNeeded:15},
+  arena:{cap:15000, costPerDate:20000, fameNeeded:35},
+  stadium:{cap:55000, costPerDate:80000, fameNeeded:60},
+  festival:{cap:40000, costPerDate:0, fameNeeded:30},
+  world:{cap:20000, costPerDate:35000, fameNeeded:50},
+  acoustic:{cap:1000, costPerDate:1200, fameNeeded:10},
+};
+document.getElementById('btnTour').onclick = ()=>{
+  if(state.activeTour){ alert('Ya estás en medio de una gira. Esperá a que termine.'); return; }
+  const type = document.getElementById('t_type').value;
+  const dates = parseInt(document.getElementById('t_dates').value)||1;
+  const name = document.getElementById('t_name').value.trim() || (tourLabel(type)+' '+state.artist.stage);
+  const info = TOUR_INFO[type];
+  if(state.artist.fame < info.fameNeeded){ alert(`Necesitás al menos ${info.fameNeeded} de fama para este tipo de gira.`); return; }
+  const totalCost = info.costPerDate*dates;
+  if(state.money<totalCost){ alert('No tenés suficiente dinero para producir esta gira.'); return; }
+  if(state.health.energy<20){ alert('Muy poca energía para salir de gira.'); return; }
+  state.money -= totalCost; state.expenseThisWeek += totalCost;
+  state.activeTour = { name, type, totalDates:dates, datesDone:0, weeksDone:0, ticketsSoldSoFar:0, incomeSoFar:0, startWeek:state.week };
+  addNews('Gira', `Anunciaste "${name}" (${tourLabel(type)}, ${dates} fechas). Empieza esta semana.`, 'pink');
+  document.getElementById('t_name').value='';
+  renderAll();
+};
+function processActiveTour(){
+  if(!state.activeTour) return;
+  const t = state.activeTour;
+  const info = TOUR_INFO[t.type];
+  const datesToday = Math.min(1, t.totalDates - t.datesDone);
+  if(datesToday<=0){ return; }
+  const sellRate = clamp(0.3+state.artist.fame/120+state.fans.loyalty/300,0.1,0.98);
+  const ticketsSold = Math.round(info.cap*datesToday*sellRate);
+  const ticketPrice = 20+state.artist.fame*0.8;
+  const gross = ticketsSold*ticketPrice;
+  const merch = ticketsSold*(3+Math.random()*5);
+  const income = Math.round(gross+merch);
+  state.money += income; state.incomeThisWeek += income;
+  state.health.energy = clamp(state.health.energy-6,0,100);
+  state.artist.fame = clamp(state.artist.fame+0.4,0,100);
+  state.fans.count += Math.round(ticketsSold*0.4);
+  t.datesDone += datesToday; t.weeksDone += 1;
+  t.ticketsSoldSoFar += ticketsSold; t.incomeSoFar += income;
+  if(t.datesDone >= t.totalDates){
+    state.tours.push({name:t.name, type:t.type, dates:t.totalDates, ticketsSold:t.ticketsSoldSoFar, income:t.incomeSoFar, week:t.startWeek});
+    addNews('Gira', `Terminó "${t.name}": ${fmtNum(t.ticketsSoldSoFar)} entradas vendidas en total, ${fmtMoney(t.incomeSoFar)} recaudados.`, 'pink');
+    state.activeTour = null;
+  } else {
+    addNews('Gira', `"${t.name}" sigue en curso (fecha ${t.datesDone}/${t.totalDates}).`, 'teal');
+  }
+}
+function tourLabel(t){ return {showcase:"Showcase",club:"Club Tour",theatre:"Theatre Tour",arena:"Arena Tour",stadium:"Stadium Tour",festival:"Festival Tour",world:"World Tour",acoustic:"Acoustic Tour"}[t]; }
+
+/* ---------- LABEL / DEALS ---------- */
+const LABEL_NAMES_MID = ["Orbit Music","Nova Records","Fresh Coast Recordings","Bluehour Music Group","Static & Wire Records"];
+const LABEL_NAMES_MAJOR = ["Universal","Sony Music","Warner Records","Atlantic Group","Columbia Worldwide"];
+function makeLabelOffer(tier){
+  if(tier==='mid'){
+    return {tier, name: LABEL_NAMES_MID[Math.floor(Math.random()*LABEL_NAMES_MID.length)],
+      royalties: Math.round(35+Math.random()*20), advance: Math.round(4000+Math.random()*9000),
+      masters: Math.random()<0.4, freedom: Math.round(55+Math.random()*25)};
+  }
+  return {tier, name: LABEL_NAMES_MAJOR[Math.floor(Math.random()*LABEL_NAMES_MAJOR.length)],
+    royalties: Math.round(12+Math.random()*16), advance: Math.round(35000+Math.random()*70000),
+    masters: false, freedom: Math.round(20+Math.random()*20)};
+}
+function renderLabelBox(){
+  const box = document.getElementById('labelBox');
+  if(state.label){
+    box.innerHTML = `
+      <div class="miniStat"><span class="lab">Sello</span><span class="val">${state.label.name}</span></div>
+      <div class="miniStat"><span class="lab">Regalías</span><span class="val">${state.label.royalties}%</span></div>
+      <div class="miniStat"><span class="lab">Masters</span><span class="val">${state.label.mastersOwned?'Tuyos':'Del sello'}</span></div>
+      <div class="miniStat"><span class="lab">Libertad creativa</span><span class="val">${state.label.freedom}%</span></div>
+      ${!state.label.mastersOwned?'<button class="btn btn-sm btn-danger" id="btnRerecordInfo" style="margin-top:10px;">Ver cómo recuperar tus masters</button>':''}
+    `;
+    const btn = document.getElementById('btnRerecordInfo');
+    if(btn) btn.onclick = ()=>alert('Andá a Legado → elegí un álbum lanzado bajo este sello → "Regrabar (Tu Versión)" para recuperar ingresos de esas canciones.');
+  } else {
+    box.innerHTML = `<div class="hint" style="margin-bottom:10px;">Sos independiente. Estas ofertas rotan cada temporada — podés firmar para recibir un adelanto, a cambio de regalías y a veces tus masters.</div>` +
+      state.labelOffers.map((o,i)=>`
+        <div style="border:1px solid var(--line); border-radius:8px; padding:10px; margin-bottom:8px;">
+          <b>${o.name}</b><br>
+          <span class="hint">Regalías ${o.royalties}% · Adelanto ${fmtMoney(o.advance)} · Masters: ${o.masters?'te quedan':'se los queda el sello'} · Libertad ${o.freedom}%</span><br>
+          <button class="btn btn-sm btn-primary" style="margin-top:6px;" data-oi="${i}">Firmar</button>
+        </div>`).join('');
+    box.querySelectorAll('[data-oi]').forEach(b=>b.onclick=()=>{
+      const offer = state.labelOffers[parseInt(b.dataset.oi)];
+      state.label = {...offer, mastersOwned:offer.masters};
+      state.money += offer.advance; state.incomeThisWeek += offer.advance;
+      addNews('Discográfica', `Firmaste con ${offer.name}.`, 'gold');
+      renderAll();
+    });
+  }
+}
+
+/* ---------- SHOP ---------- */
+const SHOP_ITEMS = [
+  {name:'Auto usado', cost:8000, fame:0}, {name:'Departamento propio', cost:60000, fame:1},
+  {name:'Estudio casero', cost:25000, fame:0}, {name:'Auto de lujo', cost:120000, fame:2},
+  {name:'Mansión', cost:900000, fame:4}, {name:'Joyas de diseñador', cost:35000, fame:1},
+  {name:'Mascota', cost:1500, fame:0}, {name:'Guardarropa de marca', cost:15000, fame:1},
+];
+function renderShop(){
+  document.getElementById('shopGrid').innerHTML = SHOP_ITEMS.map(it=>`
+    <div class="card" style="padding:12px;">
+      <b style="font-size:13px;">${it.name}</b><br>
+      <span class="hint">${fmtMoney(it.cost)}</span><br>
+      <button class="btn btn-sm btn-primary" style="margin-top:8px;" data-cost="${it.cost}" data-name="${it.name}" data-fame="${it.fame}">Comprar</button>
+    </div>`).join('');
+  document.getElementById('shopGrid').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    const cost = parseFloat(b.dataset.cost);
+    if(state.money<cost){ alert('No te alcanza.'); return; }
+    state.money -= cost; state.expenseThisWeek += cost;
+    state.artist.fame = clamp(state.artist.fame+parseFloat(b.dataset.fame),0,100);
+    state.purchases.push(b.dataset.name);
+    addNews('Vida personal', `Compraste: ${b.dataset.name}.`, 'gold');
+    renderAll();
+  });
+}
+
+/* ---------- WEEK ADVANCEMENT / SIMULATION ---------- */
+document.getElementById('btnNextWeek').onclick = advanceWeek;
+
+function advanceWeek(){
+  state.incomeThisWeek = 0; state.expenseThisWeek = 0;
+  state.week++;
+  if(state.week%52===1) state.artist.age++;
+
+  // health regen
+  state.health.energy = clamp(state.health.energy + 12 - (state.health.stress*0.05), 0, 100);
+  state.health.stress = clamp(state.health.stress - 3, 0, 100);
+  state.health.inspiration = clamp(state.health.inspiration + (Math.random()*10-4), 0, 100);
+  if(state.health.energy<25){ state.artist.fame = clamp(state.artist.fame-0.3,0,100); }
+
+  // streaming/royalties from released songs (decay curve)
+  let weekRoyalties = 0;
+  state.songs.filter(s=>s.released).forEach(s=>{
+    const age = state.week - s.releaseWeek;
+    const decay = Math.exp(-age/18);
+    const base = (s.virality+s.quality)/2;
+    const newStreams = Math.round(base*decay*(50+state.artist.fame*30)*(0.6+Math.random()*0.8));
+    s.streams += Math.max(0,newStreams);
+    state.totalStreams += Math.max(0,newStreams);
+    const royaltyRate = state.label? state.label.royalties/100*0.004 : 0.004;
+    weekRoyalties += newStreams*royaltyRate;
+  });
+  state.money += weekRoyalties; state.royaltiesTotal += weekRoyalties; state.incomeThisWeek += weekRoyalties;
+
+  // sponsorship trickle if famous
+  if(state.artist.fame>25 && Math.random()<0.3){
+    const sp = Math.round(state.artist.fame*20*Math.random());
+    state.money += sp; state.sponsorTotal += sp; state.incomeThisWeek += sp;
+  }
+
+  // fan growth
+  const totalFollowers = Object.values(state.followers).reduce((a,b)=>a+b,0);
+  state.fans.count = Math.round(totalFollowers*0.18 + state.artist.fame*400);
+  state.fans.loyalty = clamp(state.fans.loyalty + (Math.random()*2-1),0,100);
+
+  // gira activa (transcurre semana a semana)
+  processActiveTour();
+
+  // lanzamientos programados que ya llegaron a su semana
+  const due = state.scheduledReleases.filter(sr=>sr.releaseWeek<=state.week);
+  due.forEach(sr=>{ performRelease(sr.data); });
+  state.scheduledReleases = state.scheduledReleases.filter(sr=>sr.releaseWeek>state.week);
+
+  // rotación de productores disponibles (cada 6 semanas, sin tocar a los que ya usaste)
+  if(state.week%6===0){
+    state.producerPool = state.producerPool.map(p=> state.unlockedProducers.some(u=>u.id===p.id) ? p : makeProducer());
+  }
+  // rotación de ofertas de discográficas (mientras sigas independiente)
+  if(!state.label && state.week%8===0){
+    state.labelOffers = [makeLabelOffer('mid'), makeLabelOffer('major')];
+    addNews('Discográfica', 'Llegaron nuevas ofertas de discográficas.', 'teal');
+  }
+
+  // rivals AI (antes de simular charts para que ya aparezcan esta semana)
+  state.rivals.forEach(r=>{
+    if(Math.random()<0.09){
+      r.fame = clamp(r.fame+Math.random()*8-2,0,100);
+      const rHype = r.fame*0.8+Math.random()*30;
+      state.hot100.push({title:randomSongTitle(), artist:r.name, mine:false, hype:rHype, weeksOn:0, peak:999, prevPos:999});
+      if(Math.random()<0.3) addNews('Industria', `${r.name} lanzó "${randomSongTitle()}".`, 'teal');
+    }
+    if(Math.random()<0.025){
+      const aHype = r.fame*0.75+Math.random()*25;
+      state.b200.push({title:randomAlbumTitle()||r.name+" (Álbum)", artist:r.name, mine:false, hype:aHype, weeksOn:0, peak:999, prevPos:999});
+      addNews('Industria', `${r.name} sorprendió con un nuevo álbum.`, 'teal');
+    }
+  });
+
+  // charts simulation
+  simulateCharts();
+
+  // invitaciones a bandas sonoras de películas/series
+  if(state.artist.fame>=8 && state.invitations.length<3 && Math.random()<0.10){
+    const media = MEDIA_TITLES[Math.floor(Math.random()*MEDIA_TITLES.length)];
+    const theme = SOUNDTRACK_THEMES[Math.floor(Math.random()*SOUNDTRACK_THEMES.length)];
+    const kind = (state.artist.fame>40 && Math.random()<0.3) ? 'soundtrack' : 'song';
+    const pay = kind==='soundtrack'? Math.round(6000+state.artist.fame*250+Math.random()*4000) : Math.round(1200+state.artist.fame*60+Math.random()*1500);
+    state.invitations.push({
+      id:'inv_'+Date.now()+Math.random(), media:media.name, mediaType:media.kind, theme, kind, pay,
+      prestige: kind==='soundtrack'?6:3, weekOffered:state.week,
+    });
+    addNews('Invitación', `Te invitaron a componer ${kind==='soundtrack'?'la banda sonora completa':'una canción'} para la ${media.kind} "${media.name}".`, 'teal');
+  }
+
+  // random event
+  if(Math.random()<0.55){
+    const pool = RANDOM_EVENTS.filter(e=> (!e.onlyIfLowEnergy || state.health.energy<30));
+    const ev = pool[Math.floor(Math.random()*pool.length)];
+    ev.fx(state);
+    if(ev.trend){ state.trendGenre = GENRES[Math.floor(Math.random()*GENRES.length)]; addNews('Tendencia', `El género de moda ahora es ${state.trendGenre}.`, ev.tag); }
+    else addNews('Evento', ev.t, ev.tag);
+  }
+
+  // awards season roughly once a year
+  if(state.week%52===30){ runAwardsSeason(); }
+
+  // achievements
+  checkAchievements();
+
+  state.artist.fame = clamp(state.artist.fame,0,100);
+  renderAll();
+}
+
+function simulateCharts(){
+  function step(list, isMine200){
+    list.forEach(e=>{ e.hype = Math.max(0, e.hype*0.82 + Math.random()*6); e.weeksOn++; });
+    list.sort((a,b)=>b.hype-a.hype);
+    const top = list.slice(0,100);
+    top.forEach((e,i)=>{
+      e.prevPos = e.pos||999;
+      e.pos = i+1;
+      e.peak = Math.min(e.peak, e.pos);
+      if(e.mine){
+        if(e.pos===1 && !isMine200) state.everHitHot1 = true;
+        if(e.pos===1 && isMine200) state.everHit2001 = true;
+      }
+    });
+    return top.filter(e=>e.hype>1);
+  }
+  state.hot100 = step(state.hot100,false);
+  state.b200 = step(state.b200,true);
+  if(state.releasedCount>0 && state.hot100.every(e=>!e.mine || e.pos>60)){ /* possible flop tracking */ }
+  const mineOnHot = state.hot100.filter(e=>e.mine);
+  if(mineOnHot.length>0 && mineOnHot.every(e=>e.pos>80)) state.hadFlop = true;
+  state.albums.forEach(a=>{
+    const entry = state.b200.find(b=>b.title===a.name && b.mine);
+    if(entry) a.equivSales = Math.round(entry.hype*3000*(state.week-a.week+1)/10);
+  });
+}
+
+function runAwardsSeason(){
+  const cats = [
+    {name:"Grammy — Álbum del Año", pool:state.albums},
+    {name:"Grammy — Canción del Año", pool:state.songs.filter(s=>s.released)},
+    {name:"Grammy — Mejor Artista Nuevo", pool: state.week<156? [state.artist]:[]},
+    {name:"American Music Award", pool:state.albums},
+    {name:"Billboard Music Award", pool:state.albums},
+    {name:"MTV Video Music Award", pool:state.songs.filter(s=>s.isSingle)},
+    {name:"MTV EMA", pool:state.songs.filter(s=>s.isSingle)},
+    {name:"BRIT Award", pool:state.albums},
+    {name:"Latin Grammy", pool: state.genres.some(g=>["Reggaeton","Latin Pop"].includes(g))?state.albums:[]},
+    {name:"Óscar — Mejor Canción Original", pool: state.filmWorks.filter(f=>!f.title.includes('Banda Sonora'))},
+    {name:"Emmy — Mejor Tema Musical", pool: state.filmWorks},
+    {name:"Grammy — Mejor Banda Sonora", pool: state.albums.filter(a=>a.soundtrack)},
+  ];
+  cats.forEach(c=>{
+    if(c.pool.length===0) return;
+    const nominated = Math.random()<0.5;
+    if(!nominated) return;
+    const chance = clamp(state.artist.fame/140,0.02,0.5);
+    const won = Math.random()<chance;
+    const work = c.pool[c.pool.length-1];
+    const workName = work.name||work.title||state.artist.stage;
+    state.awards.push({name:c.name, work: workName, won, week:state.week});
+    if(won){ state.artist.fame = clamp(state.artist.fame+4,0,100); addNews('Premios', `¡Ganaste: ${c.name}!`, 'pink'); }
+    else addNews('Premios', `Fuiste nominado/a a ${c.name} (no ganaste esta vez).`, 'gold');
+  });
+}
+
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(a=>{
+    if(!state.unlockedAch.includes(a.id) && a.check(state)){
+      state.unlockedAch.push(a.id);
+      addNews('Logro', `Desbloqueaste: "${a.name}"`, 'pink');
+    }
+  });
+}
+
+/* ---------- RENDER ---------- */
+function renderAll(){
+  if(!state) return;
+  document.getElementById('topAvatar').textContent = state.artist.avatar;
+  document.getElementById('topName').textContent = state.artist.stage;
+  document.getElementById('topEra').textContent = state.eras.length? state.eras[state.eras.length-1].name+' Era' : 'Sin era activa';
+  document.getElementById('statMoney').textContent = fmtMoney(state.money);
+  document.getElementById('statFame').textContent = Math.round(state.artist.fame);
+  document.getElementById('statFans').textContent = fmtNum(state.fans.count);
+  document.getElementById('statEnergy').textContent = Math.round(state.health.energy);
+  document.getElementById('dateNow').textContent = weeksToDate(state.week);
+  document.getElementById('ageNow').textContent = state.artist.age+' años';
+
+  // ticker
+  const top5 = state.hot100.slice(0,5);
+  document.getElementById('tickerLine').innerHTML = top5.length?
+    ('<span class="trackline">'+ top5.map((e,i)=>`<b>#${i+1}</b> ${e.title} — ${e.artist}`).join('   •   ') + '   •   ') .repeat(1) + '</span>'
+    : 'Todavía no hay canciones en el Hot 100.';
+  // reflow ticker animation
+  const tl = document.querySelector('.ticker');
+  tl.innerHTML = tl.innerHTML;
+
+  renderDashboard();
+  renderEstudio();
+  renderLanzamientos();
+  renderSocial();
+  renderCharts();
+  renderFinanzas();
+  renderGiras();
+  renderPremios();
+  renderLogros();
+  renderLegado();
+}
+
+function renderDashboard(){
+  document.getElementById('newsFeed').innerHTML = state.news.slice(0,20).map(n=>`
+    <div class="newsItem ${n.cls}"><span class="tag">${n.tag}</span>${n.text}<span class="wk">S${n.week}</span></div>
+  `).join('') || '<div class="empty">Sin noticias todavía.</div>';
+
+  document.getElementById('dashEnergy').textContent = Math.round(state.health.energy)+'/100';
+  document.getElementById('dashStress').textContent = Math.round(state.health.stress)+'/100';
+  document.getElementById('dashInspo').textContent = Math.round(state.health.inspiration)+'/100';
+  document.getElementById('dashLabel').textContent = state.label? state.label.name : 'Independiente';
+  document.getElementById('dashCounts').textContent = `${state.albums.length} / ${state.songs.filter(s=>false).length} / ${state.songs.filter(s=>s.isSingle).length}`;
+
+  document.getElementById('dashSocials').innerHTML = Object.entries(state.followers).map(([k,v])=>`
+    <div class="barRow"><span class="lab">${platformLabel(k)}</span><div class="barTrack"><div class="barFill" style="width:${clamp(Math.log10(v+1)*12,2,100)}%"></div></div><span class="barVal">${fmtNum(v)}</span></div>
+  `).join('');
+}
+
+function renderEstudio(){
+  renderProducerBox();
+  renderFilmAssignmentSelector();
+  document.getElementById('catCount').textContent = state.songs.length+' canciones';
+  document.getElementById('songList').innerHTML = state.songs.slice().reverse().map(s=>`
+    <div class="songRow">
+      <div>
+        <div class="title">${s.title} ${s.released?`<span class="badge ${s.isSingle?'single':'unreleased'}">${s.isSingle?'Single':'Lanzada'}</span>`:'<span class="badge unreleased">Sin lanzar</span>'}</div>
+        <div class="meta">${s.genre} · ${s.lang} · Cal ${Math.round(s.quality)} · Viral ${Math.round(s.virality)} ${s.collab?('· feat. '+s.collab):''} ${s.soundtrackFor?('· 🎬 '+s.soundtrackFor):''} ${s.released?('· '+fmtNum(s.streams)+' streams'):''}</div>
+      </div>
+    </div>
+  `).join('') || '<div class="empty">Todavía no compusiste ninguna canción.</div>';
+}
+
+function renderLanzamientos(){
+  renderUnreleasedPicker();
+  refreshProjectSelector();
+  renderInvitations();
+  renderScheduledBox();
+  document.getElementById('promoList').innerHTML = [...state.songs.filter(s=>s.released), ...state.albums].slice(-6).reverse().map(p=>{
+    const hype = p.hype!==undefined? Math.round(p.hype) : Math.round(p.virality||0);
+    return `<div class="miniStat"><span class="lab">${p.title||p.name}</span><span class="val">Hype ${hype}</span></div>`;
+  }).join('') || '<div class="empty">Nada en promoción activa.</div>';
+}
+
+function renderSocial(){
+  document.getElementById('socialBars').innerHTML = Object.entries(state.followers).map(([k,v])=>`
+    <div class="barRow"><span class="lab">${platformLabel(k)}</span><div class="barTrack"><div class="barFill" style="width:${clamp(Math.log10(v+1)*12,2,100)}%"></div></div><span class="barVal">${fmtNum(v)}</span></div>
+  `).join('');
+}
+
+function renderCharts(){
+  function rows(list){
+    return list.slice(0,15).map((e,i)=>{
+      const move = e.prevPos===999? '<span class="pillNew">NUEVO</span>' : (e.pos<e.prevPos? `<span class="move-up">▲${e.prevPos-e.pos}</span>` : (e.pos>e.prevPos? `<span class="move-down">▼${e.pos-e.prevPos}</span>` : '<span class="move-same">—</span>'));
+      return `<tr class="${e.mine?'mine':''}"><td><span class="pos">${e.pos}</span> ${move}</td><td>${e.title}</td><td>${e.artist}</td><td>${e.weeksOn}</td><td>#${e.peak}</td></tr>`;
+    }).join('');
+  }
+  document.getElementById('hot100Body').innerHTML = rows(state.hot100) || `<tr><td colspan="5" class="empty">Sin datos todavía.</td></tr>`;
+  document.getElementById('b200Body').innerHTML = rows(state.b200) || `<tr><td colspan="5" class="empty">Sin datos todavía.</td></tr>`;
+
+  const mineEntries = [...state.hot100.filter(e=>e.mine), ...state.b200.filter(e=>e.mine)];
+  document.getElementById('chartHistory').outerHTML = mineEntries.length? `
+    <div id="chartHistory">${mineEntries.map(e=>`<div class="miniStat"><span class="lab">${e.title}</span><span class="val">Pico #${e.peak} · ${e.weeksOn} sem.</span></div>`).join('')}</div>
+  ` : '<div id="chartHistory" class="empty">Todavía no entraste a ningún chart.</div>';
+}
+
+function renderFinanzas(){
+  document.getElementById('fin_balance').textContent = fmtMoney(state.money);
+  document.getElementById('fin_income').textContent = fmtMoney(state.incomeThisWeek);
+  document.getElementById('fin_expense').textContent = fmtMoney(state.expenseThisWeek);
+  document.getElementById('fin_royalties').textContent = fmtMoney(state.royaltiesTotal);
+  document.getElementById('fin_sponsor').textContent = fmtMoney(state.sponsorTotal);
+  renderLabelBox();
+  renderShop();
+}
+
+function renderGiras(){
+  document.getElementById('btnTour').disabled = !!state.activeTour;
+  document.getElementById('activeTourBox').outerHTML = state.activeTour? `
+    <div id="activeTourBox">
+      <div class="miniStat"><span class="lab">${state.activeTour.name}</span><span class="val">${tourLabel(state.activeTour.type)}</span></div>
+      <div class="miniStat"><span class="lab">Fechas completadas</span><span class="val">${state.activeTour.datesDone}/${state.activeTour.totalDates}</span></div>
+      <div class="miniStat"><span class="lab">Entradas vendidas hasta ahora</span><span class="val">${fmtNum(state.activeTour.ticketsSoldSoFar)}</span></div>
+      <div class="miniStat"><span class="lab">Recaudado hasta ahora</span><span class="val">${fmtMoney(state.activeTour.incomeSoFar)}</span></div>
+      <div class="hint" style="margin-top:6px;">Avanzá semanas para que la gira siga su curso.</div>
+    </div>
+  ` : '<div id="activeTourBox" class="empty">No estás de gira ahora mismo.</div>';
+
+  document.getElementById('tourHistory').outerHTML = state.tours.length? `
+    <div id="tourHistory">${state.tours.slice().reverse().map(t=>`<div class="miniStat"><span class="lab">${t.festival?('Festival: '+t.festival):((t.name?t.name+' — ':'')+tourLabel(t.type)+' ('+t.dates+' fechas)')}</span><span class="val">${t.festival?fmtMoney(t.income):(fmtNum(t.ticketsSold)+' entradas · '+fmtMoney(t.income))}</span></div>`).join('')}</div>
+  ` : '<div id="tourHistory" class="empty">Todavía no hiciste ninguna gira.</div>';
+
+  document.getElementById('festivalGrid').innerHTML = FESTIVALS.map((f,i)=>`
+    <div class="card" style="padding:12px;">
+      <b style="font-size:13px;">${f.name}</b><br>
+      <span class="hint">Cachet ${fmtMoney(f.fee)} · Fama mín. ${f.fameNeeded}</span><br>
+      <button class="btn btn-sm btn-pink" style="margin-top:8px;" data-fi="${i}">Reservar</button>
+    </div>
+  `).join('');
+  document.getElementById('festivalGrid').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    const f = FESTIVALS[parseInt(b.dataset.fi)];
+    if(state.artist.fame < f.fameNeeded){ alert('Necesitás más fama para que te inviten a este festival.'); return; }
+    if(state.health.energy<15){ alert('Muy poca energía para tocar en un festival.'); return; }
+    state.money += f.fee; state.incomeThisWeek += f.fee;
+    state.artist.fame = clamp(state.artist.fame+3,0,100);
+    state.fans.count += Math.round(2000+state.artist.fame*80);
+    state.health.energy = clamp(state.health.energy-15,0,100);
+    state.tours.push({festival:f.name, income:f.fee, week:state.week});
+    addNews('Festival', `Tocaste en ${f.name}.`, 'pink');
+    renderAll();
+  });
+}
+
+function renderPremios(){
+  document.getElementById('awardsBox').outerHTML = state.awards.length? `
+    <div id="awardsBox">${state.awards.slice().reverse().map(a=>`<div class="miniStat"><span class="lab">${a.name} — ${a.work}</span><span class="val" style="color:${a.won?'var(--gold)':'var(--text-dim)'}">${a.won?'Ganado 🏆':'Nominación'}</span></div>`).join('')}</div>
+  ` : '<div id="awardsBox" class="empty">Aún no hay nominaciones.</div>';
+
+  const critBox = document.getElementById('criticsBox');
+  const reviewed = state.albums.filter(a=>a.reviews && a.reviews.length);
+  if(critBox){
+    critBox.innerHTML = reviewed.length? reviewed.map(a=>`
+      <div style="margin-bottom:12px;">
+        <b style="font-size:13px;">${a.name}</b>
+        ${a.reviews.map(r=>`<div class="miniStat"><span class="lab">${r.outlet}</span><span class="val">${r.score}/100</span></div>`).join('')}
+      </div>
+    `).join('') : '<div class="empty">Todavía ningún medio reseñó tu música.</div>';
+  }
+}
+
+function renderLogros(){
+  document.getElementById('achCount').textContent = state.unlockedAch.length+'/'+ACHIEVEMENTS.length;
+  document.getElementById('achGrid').innerHTML = ACHIEVEMENTS.map(a=>`
+    <div class="ach ${state.unlockedAch.includes(a.id)?'unlocked':''}">
+      <span class="name">${state.unlockedAch.includes(a.id)?'🏆 ':'🔒 '}${a.name}</span>
+      <span class="desc">${a.desc}</span>
+    </div>
+  `).join('');
+}
+
+function renderLegado(){
+  document.getElementById('eraTimeline').innerHTML = state.eras.length? state.eras.map(e=>{
+    const alb = state.albums.find(a=>a.id===e.album);
+    const cert = alb? certForUnits(alb.equivSales) : null;
+    return `<div class="eraNode" style="border-color:${e.color}">
+      <h4 style="color:${e.color}">${e.name} Era</h4>
+      <div class="sub">Comenzó en ${weeksToDate(e.startWeek)} ${alb? '· Crítica: '+alb.criticScore+'/100':''} ${cert?('· '+cert.label+' 💿'):''}</div>
+      ${e.concept?`<div class="hint" style="margin-bottom:6px;">"${e.concept}"</div>`:''}
+      ${alb?`<button class="btn btn-sm btn-ghost" data-alb="${alb.id}" onclick="openAlbumActions('${alb.id}')">Gestionar álbum</button>`:''}
+    </div>`;
+  }).join('') : '<div class="empty">Todavía no empezaste ninguna era (lanzá tu primer álbum).</div>';
+
+  document.getElementById('legacyStats').innerHTML = `
+    <div class="card" style="padding:12px;"><div class="hint">Streams totales</div><b>${fmtNum(state.totalStreams)}</b></div>
+    <div class="card" style="padding:12px;"><div class="hint">Álbumes lanzados</div><b>${state.albums.length}</b></div>
+    <div class="card" style="padding:12px;"><div class="hint">Singles lanzados</div><b>${state.songs.filter(s=>s.isSingle).length}</b></div>
+    <div class="card" style="padding:12px;"><div class="hint">Premios ganados</div><b>${state.awards.filter(a=>a.won).length}</b></div>
+    <div class="card" style="padding:12px;"><div class="hint">Giras realizadas</div><b>${state.tours.length}</b></div>
+    <div class="card" style="padding:12px;"><div class="hint">Semanas de carrera</div><b>${state.week}</b></div>
+  `;
+}
+
+function openAlbumActions(albId){
+  const alb = state.albums.find(a=>a.id===albId);
+  const modal = document.getElementById('modalContent');
+  const convertible = alb.songIds.map(id=>state.songs.find(s=>s.id===id)).filter(s=>s&&!s.isSingle);
+  modal.innerHTML = `
+    <button class="closeX" onclick="closeModal()">×</button>
+    <h2>${alb.name}</h2>
+    <div class="hint" style="margin-bottom:14px;">Ventas equivalentes: ${fmtNum(alb.equivSales)} · Crítica: ${alb.criticScore}/100</div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div class="field">
+        <label>Elegí una canción del álbum para convertir en nuevo single</label>
+        <select id="ac_songPick">
+          ${convertible.length? convertible.map(s=>`<option value="${s.id}">${s.title} (Cal ${Math.round(s.quality)} · Viral ${Math.round(s.virality)})</option>`).join('') : '<option value="">Todas las canciones ya son singles</option>'}
+        </select>
+      </div>
+      <button class="btn btn-primary" id="ac_single" ${convertible.length===0?'disabled':''}>Convertir en single y promocionar</button>
+      <button class="btn btn-teal" id="ac_deluxe" ${alb.deluxe?'disabled':''}>${alb.deluxe?'Ya tiene Edición Deluxe':'Lanzar Edición Deluxe (+3 pistas)'}</button>
+      <button class="btn btn-pink" id="ac_rerecord" ${alb.rerecorded?'disabled':''}>${alb.rerecorded?'Ya regrabado':"Regrabar — (Tu Versión)"}</button>
+    </div>
+  `;
+  document.getElementById('ac_single').onclick = ()=>{
+    const id = document.getElementById('ac_songPick').value;
+    const s = state.songs.find(x=>x.id===id);
+    if(!s) return;
+    s.isSingle = true;
+    state.hot100.push({title:s.title, artist:state.artist.stage, mine:true, hype:s.virality*0.5+state.artist.fame*0.5, weeksOn:0, peak:999, prevPos:999});
+    addNews('Single', `"${s.title}" se convirtió en el nuevo single de "${alb.name}".`, 'teal');
+    renderAll();
+    openAlbumActions(albId);
+  };
+  document.getElementById('ac_deluxe').onclick = ()=>{
+    if(alb.deluxe) return;
+    alb.deluxe = true; alb.hype += 15;
+    addNews('Deluxe', `Lanzaste la Edición Deluxe de "${alb.name}".`, 'gold');
+    closeModal(); renderAll();
+  };
+  document.getElementById('ac_rerecord').onclick = ()=>{
+    if(alb.rerecorded) return;
+    alb.rerecorded = true;
+    if(state.label && !state.label.mastersOwned){
+      state.money += alb.equivSales*0.01;
+      addNews('Regrabación', `Lanzaste "${alb.name} (Tu Versión)" y recuperaste ingresos de tus masters originales.`, 'pink');
+    } else {
+      addNews('Regrabación', `Lanzaste una versión de aniversario de "${alb.name}".`, 'pink');
+    }
+    closeModal(); renderAll();
+  };
+  document.getElementById('modalBg').classList.add('open');
+}
+function closeModal(){ document.getElementById('modalBg').classList.remove('open'); }
+document.getElementById('modalBg').addEventListener('click', e=>{ if(e.target.id==='modalBg') closeModal(); });
+
+/* ---------- SAVE / LOAD ---------- */
+function saveGame(){ try{ localStorage.setItem('encore_save', JSON.stringify(state)); alert('Partida guardada.'); }catch(e){ alert('No se pudo guardar.'); } }
+function loadGame(){
+  try{
+    const raw = localStorage.getItem('encore_save');
+    if(!raw){ alert('No hay partida guardada.'); return; }
+    state = JSON.parse(raw);
+    state.invitations = state.invitations || [];
+    state.filmWorks = state.filmWorks || [];
+    state.producerPool = state.producerPool || [makeProducer(),makeProducer(),makeProducer(),makeProducer(),makeProducer()];
+    state.unlockedProducers = state.unlockedProducers || [SELF_PRODUCER];
+    state.activeTour = state.activeTour || null;
+    state.scheduledReleases = state.scheduledReleases || [];
+    state.labelOffers = state.labelOffers || [makeLabelOffer('mid'), makeLabelOffer('major')];
+    state.acceptedInvitations = state.acceptedInvitations || [];
+    document.getElementById('setupScreen').style.display='none';
+    document.getElementById('game').style.display='block';
+    buildStaticSelectors();
+    renderAll();
+  }catch(e){ alert('No se pudo cargar la partida.'); }
+}
+// Autosave every advanced week
+const origAdvance = advanceWeek;
+window.advanceWeek = function(){ origAdvance(); try{ localStorage.setItem('encore_save', JSON.stringify(state)); }catch(e){} };
+document.getElementById('btnNextWeek').onclick = window.advanceWeek;
+
+// Add save/load buttons to topbar dynamically
+window.addEventListener('DOMContentLoaded', ()=>{
+  const bar = document.querySelector('.topbar');
+  const saveBtn = document.createElement('button');
+  saveBtn.className='btn btn-ghost btn-sm'; saveBtn.textContent='Guardar'; saveBtn.style.marginLeft='8px';
+  saveBtn.onclick = saveGame;
+  const loadBtnTop = document.createElement('button');
+  loadBtnTop.className='btn btn-ghost btn-sm'; loadBtnTop.textContent='Cargar'; loadBtnTop.style.marginLeft='6px';
+  loadBtnTop.onclick = loadGame;
+  const themeBtn = document.createElement('button');
+  themeBtn.className='btn btn-ghost btn-sm'; themeBtn.textContent='☀ / 🌙'; themeBtn.style.marginLeft='6px';
+  themeBtn.onclick = ()=>document.body.classList.toggle('light');
+  bar.appendChild(saveBtn); bar.appendChild(loadBtnTop); bar.appendChild(themeBtn);
+
+  const loadStart = document.createElement('button');
+  loadStart.className='btn btn-ghost'; loadStart.textContent='Cargar partida guardada';
+  loadStart.style.marginTop='12px'; loadStart.style.width='100%';
+  loadStart.onclick = loadGame;
+  document.querySelector('.setupCard').appendChild(loadStart);
+
+  initSetupUI();
+});
+</script>
+</body>
+</html>
